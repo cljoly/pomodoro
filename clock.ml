@@ -1,7 +1,8 @@
 (*
  * clock.ml
  * --------
- * Copyright : (c) 2011, Jeremie Dimino <jeremie@dimino.org>
+ * Copyright : (c) 2011, Jeremie Dimino <jeremie@dimino.org>,
+ *                 2016, Leo Wzukw <leowzukw@vmail.me>
  * Licence   : BSD3
  *
  * This file is a part of Lambda-Term.
