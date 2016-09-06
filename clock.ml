@@ -33,7 +33,11 @@ end;;
 
 let time_remaining ~timer =
   timer#remaining |> Option.value ~default:(Ts.create ())
-  |> Ts.to_string
+  (* XXX Manual pretty printing *)
+  |> Ts.to_parts |> fun { Ts.Parts.hr ; min; sec } ->
+      hr |> function
+        | 0 -> sprintf "%i:%i" min sec
+        | _ -> sprintf "%i:%i:%i" hr min sec
 ;;
 
 (*
