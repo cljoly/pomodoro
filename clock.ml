@@ -59,8 +59,13 @@ let main ~timer () =
   vbox#add button;
 
   (* Update the time every second. *)
-  ignore (Lwt_engine.on_timer 1.0 true
-    (fun _ -> clock#set_text (time_remaining ~timer)));
+    (Lwt_engine.on_timer 1.0 true
+      (fun _ -> clock#set_text (
+        match timer#remaining with
+        None ->
+          Sys.command  "notify-send \"Pomodoro ended, take a break\"" |> ignore;
+          "Finished"
+        | Some _ -> time_remaining ~timer))) |> ignore;
 
   (* Quit when the exit button is clicked. *)
   button#on_click (wakeup wakener);
