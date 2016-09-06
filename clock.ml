@@ -18,7 +18,7 @@ module Ts = Time.Span;;
 
 (* Create a timer of duration (in minute) *)
 class timer duration = object
-  val duration = Ts.create ~min:duration ()
+  val duration = Ts.of_min duration
   val start_time = T.now ()
 
   method remaining =
@@ -70,7 +70,7 @@ let () =
   let timers =
     Sys.argv |> Array.to_list
     |> fun (_ :: tl) ->
-    List.map ~f:Int.of_string tl
+    List.map ~f:Float.of_string tl
     |> List.map ~f:(new timer)
   in
 
