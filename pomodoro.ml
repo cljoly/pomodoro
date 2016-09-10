@@ -89,7 +89,6 @@ class ptask name description cycle (simple_timer:(of_timer -> timer)) =
   val description : string = description
   method name = name
   method description = description
-  method summary = sprintf "%s: %s" name description
 
   val mutable status = Active
   method mark_done = status <- Done
@@ -114,6 +113,9 @@ class ptask name description cycle (simple_timer:(of_timer -> timer)) =
       current_timer <- simple_timer (List.nth_exn cycle position);
     end;
     current_timer
+
+  method summary = sprintf "%s: %s\nPomodoro: %i" name description
+    number_of_pomodoro
 end;;
 
 (* Pretty printing of remaining time *)
@@ -188,7 +190,9 @@ let main ~ptasks () =
   (* Allow to get remainging time for current ptask, if any one is yet active *)
   let remaining_time () =
     current_task ~default:"Finished"
-      (fun ptask -> time_remaining ~timer:ptask#current_timer)
+      (fun ptask ->
+        let timer = ptask#current_timer in
+        String.concat [ (time_remaining ~timer) ; "\n" ; timer#name ])
   in
   let task_summary () =
     current_task ~default:"" (fun ptask -> ptask#summary)
