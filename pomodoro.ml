@@ -97,7 +97,7 @@ class ptask name description cycle (simple_timer:(of_timer -> timer)) =
   val cycle : of_timer list = cycle
   val cycle_length = cycle_length
   (* Posiition in the cycle, lead to problem if cycle is empty *)
-  val mutable position = 0
+  val mutable position = -1
   val mutable current_timer = empty_timer ()
   val mutable number_of_pomodoro = 0
   (* Return current timer. Cycles through timers, as one finishes *)
