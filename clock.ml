@@ -17,10 +17,23 @@ module T = Time;;
 module Ts = Time.Span;;
 
 
-(* Create a timer of duration (in minute) *)
-class timer duration = object(s)
+(* Create a timer of duration (in minute). The on_exit function is called the
+ * first time the timer is finished *)
+class timer duration ~name ~description ~on_finish = object(s)
+  val name : string = name
+  val description : string = description
+  method name = name
+  method description = description
   val duration = Ts.of_min duration
   val start_time = T.now ()
+  val mutable marked_finished = ref false
+
+  method private call_on_finish_once =
+    if not !marked_finished
+    then begin
+      on_finish s;
+      marked_finished := true
+    end
 
   method remaining =
     let now = T.now () in
@@ -28,7 +41,10 @@ class timer duration = object(s)
     let remaining_time = Ts.(duration - eleapsed_time) in
     if Ts.(compare eleapsed_time duration) < 0
     then Some remaining_time (* Time remaining *)
-    else None
+    else begin
+      s#call_on_finish_once;
+      None
+    end
   method finished = Option.is_none s#remaining
 end;;
 
@@ -50,6 +66,12 @@ let rec get_pending = function
   | [] -> None
 ;;
 
+(* When a timer is finished, notify *)
+let on_finish timer =
+  sprintf "notify-send '%s ended. \\n%s'" timer#name timer#description
+  |> Sys.command
+  |> ignore
+;;
 
 (* Function to treat one timer after the other, giving remaning time to show *)
 let handle_timers timers =
@@ -57,7 +79,6 @@ let handle_timers timers =
   |> Option.map ~f:(fun timer ->
   if timer#finished
   then begin
-    Sys.command  "notify-send \"Pomodoro ended, take a break\"" |> ignore;
     "Finished"
   end else time_remaining ~timer)
 ;;
@@ -96,7 +117,7 @@ let () =
     Sys.argv |> Array.to_list
     |> fun (_ :: tl) ->
     List.map ~f:Float.of_string tl
-    |> List.map ~f:(new timer)
+    |> List.map ~f:(new timer ~name:"" ~description:"" ~on_finish)
   in
 
   Lwt_main.run (main ~timers ())
