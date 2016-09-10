@@ -16,6 +16,8 @@ open LTerm_widget;;
 module T = Time;;
 module Ts = Time.Span;;
 
+(* Interval used by lwt_engine timer *)
+let ticking = 1.0;;
 
 (* Create a timer of duration (in minute). The on_exit function is called the
  * first time the timer is finished *)
@@ -48,6 +50,7 @@ class timer duration ~name ~description ~on_finish = object(s)
   method finished = Option.is_none s#remaining
 end;;
 
+(* Pretty printing of remaining time *)
 let time_remaining ~timer =
   timer#remaining |> Option.value ~default:(Ts.create ())
   (* XXX Manual pretty printing *)
@@ -99,7 +102,7 @@ let main ~timers () =
   vbox#add button;
 
   (* Update the time every second *)
-  (Lwt_engine.on_timer 1.0 true
+  (Lwt_engine.on_timer ticking true
      (fun _ -> clock#set_text (remaining_time ())))
   |> ignore;
 
