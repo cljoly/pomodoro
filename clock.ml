@@ -9,9 +9,9 @@
  *)
 open Core.Std;;
 
-open Lwt_react
-open Lwt
-open LTerm_widget
+open Lwt_react;;
+open Lwt;;
+open LTerm_widget;;
 
 module T = Time;;
 module Ts = Time.Span;;
@@ -35,20 +35,11 @@ end;;
 let time_remaining ~timer =
   timer#remaining |> Option.value ~default:(Ts.create ())
   (* XXX Manual pretty printing *)
-  |> Ts.to_parts |> fun { Ts.Parts.hr ; min; sec } ->
+  |> Ts.to_parts |> fun { Ts.Parts.hr ; min; sec ; _ } ->
   hr |> function
   | 0 -> sprintf "%i:%i" min sec
   | _ -> sprintf "%i:%i:%i" hr min sec
 ;;
-
-(*
-let get_time () =
-  let localtime = Unix.localtime (Unix.time ()) in
-  Printf.sprintf "%02u:%02u:%02u"
-    localtime.Unix.tm_hour
-    localtime.Unix.tm_min
-    localtime.Unix.tm_sec
-*)
 
 (* Get first timer not marked as finished *)
 let rec get_pending = function
@@ -86,15 +77,15 @@ let main ~timers () =
   vbox#add clock;
   vbox#add button;
 
-  (* Update the time every second. *)
+  (* Update the time every second *)
   (Lwt_engine.on_timer 1.0 true
      (fun _ -> clock#set_text (remaining_time ())))
   |> ignore;
 
-  (* Quit when the exit button is clicked. *)
+  (* Quit when the exit button is clicked *)
   button#on_click (wakeup wakener);
 
-  (* Run in the standard terminal. *)
+  (* Run in the standard terminal *)
   Lazy.force LTerm.stdout
   >>= fun term ->
   run term vbox waiter
