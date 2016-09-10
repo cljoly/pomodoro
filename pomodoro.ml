@@ -169,18 +169,6 @@ let read_log filename =
     new ptask task_sexp.name task_sexp.description cycle simple_timer)
 ;;
 
-(* Function to treat one ptask after the other, giving remaining time to show *)
-(*
-let handle_task tasks =
-  get_pending timers
-  |> Option.map ~f:(fun ptask ->
-      if ptask#is_done
-      then begin
-        "Finished"
-      end else time_remaining ~timer)
-;;
-*)
-
 let main ~ptasks () =
   let waiter, wakener = wait () in
 
