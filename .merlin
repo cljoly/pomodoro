@@ -1,0 +1,5 @@
+PKG core core lwt lambda-term
+
+S *
+
+B _build/
