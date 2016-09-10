@@ -189,7 +189,7 @@ let main ~ptasks () =
   in
   let task_summary () =
     Option.value_map ~default:"" current_task
-      ~f:(fun ptask -> ptask#name)
+      ~f:(fun ptask -> ptask#summary)
   in
 
   let vbox = new vbox in
