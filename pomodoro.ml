@@ -35,7 +35,7 @@ type log = {
 } [@@deriving sexp]
 
 (* Interval used by lwt_engine timer *)
-let ticking = 1.0;;
+let ticking = 0.5;;
 
 (* Some type to describe states of ptasks *)
 type status = Active | Done;;
@@ -181,15 +181,17 @@ let handle_task tasks =
 let main ~ptasks () =
   let waiter, wakener = wait () in
 
-  let current_task = get_pending ptasks in
+  let current_task ~default f =
+    get_pending ptasks
+    |> Option.value_map ~f ~default
+  in
   (* Allow to get remainging time for current ptask, if any one is yet active *)
   let remaining_time () =
-    Option.value_map current_task ~default:"Finished"
-      ~f:(fun ptask -> time_remaining ~timer:ptask#current_timer)
+    current_task ~default:"Finished"
+      (fun ptask -> time_remaining ~timer:ptask#current_timer)
   in
   let task_summary () =
-    Option.value_map ~default:"" current_task
-      ~f:(fun ptask -> ptask#summary)
+    current_task ~default:"" (fun ptask -> ptask#summary)
   in
 
   let vbox = new vbox in
@@ -210,6 +212,9 @@ let main ~ptasks () =
        ))
   |> ignore;
 
+  (* Mark task as finished when done button is pressed *)
+  done_btn#on_click
+    (fun () -> current_task ~default:() (fun t -> t#mark_done));
   (* Quit when the exit button is clicked *)
   exit_btn#on_click (wakeup wakener);
 
