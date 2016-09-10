@@ -119,20 +119,32 @@ let main ~timers () =
     handle_timers timers
     |> Option.value ~default:"Finished"
   in
+  let task_resum () =
+    Option.value_map ~default:"" (get_pending timers)
+    ~f:(fun timer ->
+        sprintf "%s: %s" timer#name timer#description)
+  in
 
   let vbox = new vbox in
   let clock = new label (remaining_time ()) in
-  let button = new button "exit" in
+  let task = new label "" in
+  let done_btn = new button "Done" in
+  let exit_btn = new button "Exit" in
   vbox#add clock;
-  vbox#add button;
+  vbox#add task;
+  vbox#add done_btn;
+  vbox#add exit_btn;
 
   (* Update the time every second *)
   (Lwt_engine.on_timer ticking true
-     (fun _ -> clock#set_text (remaining_time ())))
+     (fun _ ->
+       clock#set_text (remaining_time ());
+       task#set_text (task_resum ())
+       ))
   |> ignore;
 
   (* Quit when the exit button is clicked *)
-  button#on_click (wakeup wakener);
+  exit_btn#on_click (wakeup wakener);
 
   (* Run in the standard terminal *)
   Lazy.force LTerm.stdout
