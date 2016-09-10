@@ -82,7 +82,7 @@ let empty_timer () =
 
 (* A task (written ptask to void conflict with lwt), like "Learn OCaml". Cycle
  * sets the number and order of timers *)
-class ptask name description cycle (simple_timer:(of_timer -> timer)) =
+class ptask name description cycle (simple_timer:(of_timer -> timer)) ?done_at =
   let cycle_length = List.length cycle in
   object(s)
   val name : string = name
@@ -90,7 +90,8 @@ class ptask name description cycle (simple_timer:(of_timer -> timer)) =
   method name = name
   method description = description
 
-  val mutable status = Active
+  val mutable status = match done_at with Some _ -> Done | None -> Active
+  val done_at = Option.value ~default:"" done_at
   method mark_done = status <- Done
   method is_done = status = Done
 
@@ -166,7 +167,7 @@ let read_log filename =
     ; Pomodoro ; Long_break
   ] in
   List.map log.tasks ~f:(fun (task_sexp:task_sexp) ->
-    new ptask task_sexp.name task_sexp.description cycle simple_timer)
+    new ptask task_sexp.name task_sexp.description cycle simple_timer ?done_at:task_sexp.done_at)
 ;;
 
 let main ~ptasks () =
