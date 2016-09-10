@@ -1,2 +1,2 @@
 all:
-	corebuild -pkg lambda-term -pkg lwt clock.byte
+	corebuild -pkg lambda-term -pkg lwt pomodoro.byte
