@@ -1,6 +1,6 @@
 (
  (settings(
-  (pomodoro_duration 0.15)
+  (pomodoro_duration 25)
   (short_break_duration 5)
   (long_break_duration 30)
  ))
