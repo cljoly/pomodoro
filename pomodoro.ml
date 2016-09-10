@@ -18,9 +18,9 @@ module Ts = Time.Span;;
 
 (* Simple log of pomodoros & tasks, with settings *)
 type settings = {
-  pomodoro_duration : int;
-  short_break_duration : int;
-  long_break_duration : int
+  pomodoro_duration : float;
+  short_break_duration : float;
+  long_break_duration : float
 } [@@deriving sexp]
 type task = {
   name : string;
@@ -93,14 +93,21 @@ let on_finish timer =
   |> ignore
 ;;
 
+(* Read log containg tasks and settings *)
+let read_log filename =
+  let log = Sexp.load_sexp_conv_exn filename log_of_sexp in
+  List.map log.tasks ~f:(fun task ->
+      new timer log.settings.pomodoro_duration ~name:task.name ~description:task.description ~on_finish)
+;;
+
 (* Function to treat one timer after the other, giving remaning time to show *)
 let handle_timers timers =
   get_pending timers
   |> Option.map ~f:(fun timer ->
-  if timer#finished
-  then begin
-    "Finished"
-  end else time_remaining ~timer)
+      if timer#finished
+      then begin
+        "Finished"
+      end else time_remaining ~timer)
 ;;
 
 let main ~timers () =
@@ -134,10 +141,9 @@ let main ~timers () =
 let () =
   (* Get timers with command line arguments *)
   let timers =
-    Sys.argv |> Array.to_list
-    |> fun (_ :: tl) ->
-      List.map ~f:Float.of_string tl
-      |> List.map ~f:(new timer ~name:"" ~description:"" ~on_finish)
+    Sys.argv |> function
+      | [| _ ; name |] -> read_log name
+    | _ -> failwith "Needs exactly one argument, filename of your log file."
   in
 
   Lwt_main.run (main ~timers ())
