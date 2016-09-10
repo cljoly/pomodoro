@@ -19,9 +19,9 @@ module Ts = Time.Span;;
 (* Simple log of pomodoros & tasks, with settings *)
 type settings = {
   (* Defaults from pomodoro guide *)
-  pomodoro_duration : float ;
-  short_break_duration : float ;
-  long_break_duration : float 
+  pomodoro_duration : float;
+  short_break_duration : float;
+  long_break_duration : float
 } [@@deriving sexp]
 type task = {
   name : string;
