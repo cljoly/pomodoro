@@ -18,15 +18,16 @@ module Ts = Time.Span;;
 
 (* Simple log of pomodoros & tasks, with settings *)
 type settings = {
-  pomodoro_duration : float;
-  short_break_duration : float;
-  long_break_duration : float
+  (* Defaults from pomodoro guide *)
+  pomodoro_duration : float ;
+  short_break_duration : float ;
+  long_break_duration : float 
 } [@@deriving sexp]
 type task = {
   name : string;
   description : string;
-  done_at : string option; (* date and time iso8601 like 2016-09-10T14:57:25 *)
-  done_with : int option (* Number of pomodoro used *)
+  done_at : string sexp_option; (* date and time iso8601 like 2016-09-10T14:57:25 *)
+  done_with : int sexp_option (* Number of pomodoro used *)
 } [@@deriving sexp]
 type log = {
   settings : settings;
