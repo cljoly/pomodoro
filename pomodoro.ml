@@ -16,6 +16,23 @@ open LTerm_widget;;
 module T = Time;;
 module Ts = Time.Span;;
 
+(* Simple log of pomodoros & tasks, with settings *)
+type settings = {
+  pomodoro_duration : int;
+  short_break_duration : int;
+  long_break_duration : int
+} [@@deriving sexp]
+type task = {
+  name : string;
+  description : string;
+  done_at : string option; (* date and time iso8601 like 2016-09-10T14:57:25 *)
+  done_with : int option (* Number of pomodoro used *)
+} [@@deriving sexp]
+type log = {
+  settings : settings;
+  tasks : task list
+} [@@deriving sexp]
+
 (* Interval used by lwt_engine timer *)
 let ticking = 1.0;;
 
