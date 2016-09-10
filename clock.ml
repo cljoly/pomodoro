@@ -77,7 +77,7 @@ let main ~timers () =
   (* Allow to get remainging time for current timer, if any one is yet active *)
   let remaining_time () =
     handle_timers timers
-    |> Option.value_exn
+    |> Option.value ~default:"Finished"
   in
 
   let vbox = new vbox in
