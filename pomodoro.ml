@@ -23,7 +23,7 @@ type settings = {
   short_break_duration : float;
   long_break_duration : float
 } [@@deriving sexp]
-type task = {
+type task_sexp = {
   name : string;
   description : string;
   done_at : string sexp_option; (* date and time iso8601 like 2016-09-10T14:57:25 *)
@@ -31,28 +31,36 @@ type task = {
 } [@@deriving sexp]
 type log = {
   settings : settings;
-  tasks : task list
+  tasks : task_sexp list
 } [@@deriving sexp]
 
 (* Interval used by lwt_engine timer *)
 let ticking = 1.0;;
 
+(* Some type to describe states of ptasks *)
+type status = Active | Done;;
+(* Type of timer *)
+type of_timer =
+  Pomodoro | Short_break | Long_break
+;;
+
 (* Create a timer of duration (in minute). The on_exit function is called the
  * first time the timer is finished *)
-class timer duration ~name ~description ~on_finish = object(s)
+class timer duration of_type ~on_finish name = object(s)
   val name : string = name
-  val description : string = description
   method name = name
-  method description = description
   val duration = Ts.of_min duration
   val start_time = T.now ()
-  val mutable marked_finished = ref false
+  val mutable marked_finished = false
+
+  val of_type : of_timer = of_type
+  method of_type = of_type
 
   method private call_on_finish_once =
-    if not !marked_finished
+    if not marked_finished
     then begin
       on_finish s;
-      marked_finished := true
+      marked_finished <- true
     end
 
   method remaining =
@@ -65,7 +73,45 @@ class timer duration ~name ~description ~on_finish = object(s)
       s#call_on_finish_once;
       None
     end
-  method finished = Option.is_none s#remaining
+  method is_finished = Option.is_none s#remaining
+end;;
+
+let empty_timer = failwith "TODO";;
+
+(* A task (written ptask to void conflict with lwt), like "Learn OCaml". Cycle
+ * sets the number and order of timers *)
+class ptask name description cycle (simple_timer:(of_timer -> timer)) =
+  let cycle_length = List.length cycle in
+  object(s)
+  val name : string = name
+  val description : string = description
+  method name = name
+  method description = description
+  method summary = sprintf "%s: %s" name description
+
+  val mutable status = Active
+  method mark_done = status <- Done
+  method is_done = status = Done
+
+  val cycle : of_timer list = cycle
+  val cycle_length = cycle_length
+  (* Posiition in the cycle, lead to problem if cycle is empty *)
+  val mutable position = 0
+  val mutable current_timer = empty_timer
+  val mutable number_of_pomodoro = 0
+  (* Return current timer. Cycles through timers, as one finishes *)
+  method current_timer =
+    if
+      (status = Active)
+      && current_timer#is_finished
+    then begin
+      if current_timer#of_type = Pomodoro
+      then number_of_pomodoro <- number_of_pomodoro;
+      (* Circle through positions *)
+      position <- (position + 1) mod cycle_length;
+      current_timer <- simple_timer (List.nth_exn cycle position);
+    end;
+    current_timer
 end;;
 
 (* Pretty printing of remaining time *)
@@ -78,10 +124,10 @@ let time_remaining ~timer =
   | _ -> sprintf "%i:%i:%i" hr min sec
 ;;
 
-(* Get first timer not marked as finished *)
+(* Get first ptask not marked as done *)
 let rec get_pending = function
   | hd :: tl ->
-    if hd#finished
+    if hd#is_done
     then get_pending tl
     else Some hd
   | [] -> None
@@ -89,7 +135,7 @@ let rec get_pending = function
 
 (* When a timer is finished, notify *)
 let on_finish timer =
-  sprintf "notify-send '%s ended. \\n%s'" timer#name timer#description
+  sprintf "notify-send '%s ended.'" timer#name
   |> Sys.command
   |> ignore
 ;;
@@ -97,41 +143,60 @@ let on_finish timer =
 (* Read log containg tasks and settings *)
 let read_log filename =
   let log = Sexp.load_sexp_conv_exn filename log_of_sexp in
-  List.map log.tasks ~f:(fun task ->
-      new timer log.settings.pomodoro_duration ~name:task.name ~description:task.description ~on_finish)
+  let durations = [
+    ( Pomodoro, (log.settings.pomodoro_duration, "Pomodoro") );
+    ( Short_break, (log.settings.short_break_duration, "Short break") );
+    ( Long_break, (log.settings.long_break_duration, "Long break") )
+  ] in
+  let simple_timer of_timer = (* Simplified instanciation of class timer *)
+    let (duration, name) = List.Assoc.find_exn durations of_timer in
+    new timer duration of_timer ~on_finish name
+  in
+  (* We do 4 pomodoroes, with a short break between each, before taking a long
+   * break *)
+  let cycle = (* TODO Allow to configure this *)
+    [ Pomodoro ; Short_break
+    ; Pomodoro ; Short_break
+    ; Pomodoro ; Short_break
+    ; Pomodoro ; Long_break
+  ] in
+  List.map log.tasks ~f:(fun (task_sexp:task_sexp) ->
+    new ptask task_sexp.name task_sexp.description cycle simple_timer)
 ;;
 
-(* Function to treat one timer after the other, giving remaning time to show *)
-let handle_timers timers =
+(* Function to treat one ptask after the other, giving remaining time to show *)
+(*
+let handle_task tasks =
   get_pending timers
-  |> Option.map ~f:(fun timer ->
-      if timer#finished
+  |> Option.map ~f:(fun ptask ->
+      if ptask#is_done
       then begin
         "Finished"
       end else time_remaining ~timer)
 ;;
+*)
 
-let main ~timers () =
+let main ~ptasks () =
   let waiter, wakener = wait () in
 
-  (* Allow to get remainging time for current timer, if any one is yet active *)
+  let current_task = get_pending ptasks in
+  (* Allow to get remainging time for current ptask, if any one is yet active *)
   let remaining_time () =
-    handle_timers timers
-    |> Option.value ~default:"Finished"
+    Option.value_map current_task ~default:"Finished"
+      ~f:(fun ptask -> time_remaining ~timer:ptask#current_timer)
   in
-  let task_resum () =
-    Option.value_map ~default:"" (get_pending timers)
-    ~f:(fun timer ->
-        sprintf "%s: %s" timer#name timer#description)
+  let task_summary () =
+    Option.value_map ~default:"" current_task
+      ~f:(fun ptask -> ptask#name)
   in
 
   let vbox = new vbox in
   let clock = new label (remaining_time ()) in
-  let task = new label "" in
+  let ptask = new label "" in
   let done_btn = new button "Done" in
   let exit_btn = new button "Exit" in
   vbox#add clock;
-  vbox#add task;
+  vbox#add ptask;
   vbox#add done_btn;
   vbox#add exit_btn;
 
@@ -139,7 +204,7 @@ let main ~timers () =
   (Lwt_engine.on_timer ticking true
      (fun _ ->
        clock#set_text (remaining_time ());
-       task#set_text (task_resum ())
+       ptask#set_text (task_summary ())
        ))
   |> ignore;
 
@@ -153,12 +218,12 @@ let main ~timers () =
 
 let () =
   (* Get timers with command line arguments *)
-  let timers =
+  let ptasks =
     Sys.argv |> function
       | [| _ ; name |] -> read_log name
     | _ -> failwith "Needs exactly one argument, filename of your log file."
   in
 
-  Lwt_main.run (main ~timers ())
+  Lwt_main.run (main ~ptasks ())
 
 ;;
