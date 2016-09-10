@@ -76,7 +76,9 @@ class timer duration of_type ~on_finish name = object(s)
   method is_finished = Option.is_none s#remaining
 end;;
 
-let empty_timer = failwith "TODO";;
+let empty_timer () =
+  new timer 0. Short_break ~on_finish:(fun _ -> ()) ""
+;;
 
 (* A task (written ptask to void conflict with lwt), like "Learn OCaml". Cycle
  * sets the number and order of timers *)
@@ -97,7 +99,7 @@ class ptask name description cycle (simple_timer:(of_timer -> timer)) =
   val cycle_length = cycle_length
   (* Posiition in the cycle, lead to problem if cycle is empty *)
   val mutable position = 0
-  val mutable current_timer = empty_timer
+  val mutable current_timer = empty_timer ()
   val mutable number_of_pomodoro = 0
   (* Return current timer. Cycles through timers, as one finishes *)
   method current_timer =
