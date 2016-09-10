@@ -119,8 +119,8 @@ let () =
   let timers =
     Sys.argv |> Array.to_list
     |> fun (_ :: tl) ->
-    List.map ~f:Float.of_string tl
-    |> List.map ~f:(new timer ~name:"" ~description:"" ~on_finish)
+      List.map ~f:Float.of_string tl
+      |> List.map ~f:(new timer ~name:"" ~description:"" ~on_finish)
   in
 
   Lwt_main.run (main ~timers ())
