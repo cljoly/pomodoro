@@ -41,7 +41,7 @@ let ticking = 0.5;;
 type status = Active | Done;;
 (* Type of timer *)
 type of_timer =
-  Pomodoro | Short_break | Long_break
+    Pomodoro | Short_break | Long_break
 ;;
 
 (* Create a timer of duration (in minute). The on_exit function is called the
@@ -83,49 +83,49 @@ let empty_timer () =
 (* A task (written ptask to void conflict with lwt), like "Learn OCaml". Cycle
  * sets the number and order of timers *)
 class ptask
-  name
-  description
-  cycle
-  (simple_timer:(of_timer -> timer))
-  ?done_at
-  number_of_pomodoro
+    name
+    description
+    cycle
+    (simple_timer:(of_timer -> timer))
+    ?done_at
+    number_of_pomodoro
   =
   let cycle_length = List.length cycle in
   object(s)
-  val name : string = name
-  val description : string = description
-  method name = name
-  method description = description
+    val name : string = name
+    val description : string = description
+    method name = name
+    method description = description
 
-  val mutable status = match done_at with Some _ -> Done | None -> Active
-  val done_at = Option.value ~default:"" done_at
-  method mark_done = status <- Done
-  method is_done = status = Done
+    val mutable status = match done_at with Some _ -> Done | None -> Active
+    val done_at = Option.value ~default:"" done_at
+    method mark_done = status <- Done
+    method is_done = status = Done
 
-  val cycle : of_timer list = cycle
-  val cycle_length = cycle_length
-  (* Posiition in the cycle, lead to problem if cycle is empty *)
-  val mutable position = -1
-  val mutable current_timer = empty_timer ()
-  val mutable number_of_pomodoro = number_of_pomodoro
-  (* Return current timer. Cycles through timers, as one finishes *)
-  method current_timer =
-    if
-      (status = Active)
-      && current_timer#is_finished
-    then begin
-      if current_timer#of_type = Pomodoro
-      then
-      number_of_pomodoro <- number_of_pomodoro + 1;
-      (* Circle through positions *)
-      position <- (position + 1) mod cycle_length;
-      current_timer <- simple_timer (List.nth_exn cycle position);
-    end;
-    current_timer
+    val cycle : of_timer list = cycle
+    val cycle_length = cycle_length
+    (* Posiition in the cycle, lead to problem if cycle is empty *)
+    val mutable position = -1
+    val mutable current_timer = empty_timer ()
+    val mutable number_of_pomodoro = number_of_pomodoro
+    (* Return current timer. Cycles through timers, as one finishes *)
+    method current_timer =
+      if
+        (status = Active)
+        && current_timer#is_finished
+      then begin
+        if current_timer#of_type = Pomodoro
+        then
+          number_of_pomodoro <- number_of_pomodoro + 1;
+        (* Circle through positions *)
+        position <- (position + 1) mod cycle_length;
+        current_timer <- simple_timer (List.nth_exn cycle position);
+      end;
+      current_timer
 
-  method summary = sprintf "%s: %s\nPomodoro: %i" name description
-    number_of_pomodoro
-end;;
+    method summary = sprintf "%s: %s\nPomodoro: %i" name description
+        number_of_pomodoro
+  end;;
 
 (* Pretty printing of remaining time *)
 let time_remaining ~timer =
@@ -172,16 +172,16 @@ let read_log filename =
     ; Pomodoro ; Short_break
     ; Pomodoro ; Short_break
     ; Pomodoro ; Long_break
-  ] in
+    ] in
   List.map log.tasks ~f:(fun (task_sexp:task_sexp) ->
-    new ptask
-      task_sexp.name
-      task_sexp.description
-      cycle
-      simple_timer
-      ?done_at:task_sexp.done_at
-      (Option.value ~default:0 task_sexp.done_with)
-  )
+      new ptask
+        task_sexp.name
+        task_sexp.description
+        cycle
+        simple_timer
+        ?done_at:task_sexp.done_at
+        (Option.value ~default:0 task_sexp.done_with)
+    )
 ;;
 
 let main ~ptasks () =
@@ -195,8 +195,8 @@ let main ~ptasks () =
   let remaining_time () =
     current_task ~default:"Finished"
       (fun ptask ->
-        let timer = ptask#current_timer in
-        String.concat [ (time_remaining ~timer) ; "\n" ; timer#name ])
+         let timer = ptask#current_timer in
+         String.concat [ (time_remaining ~timer) ; "\n" ; timer#name ])
   in
   let task_summary () =
     current_task ~default:"" (fun ptask -> ptask#summary)
@@ -215,9 +215,9 @@ let main ~ptasks () =
   (* Update the time every second *)
   (Lwt_engine.on_timer ticking true
      (fun _ ->
-       clock#set_text (remaining_time ());
-       ptask#set_text (task_summary ())
-       ))
+        clock#set_text (remaining_time ());
+        ptask#set_text (task_summary ())
+     ))
   |> ignore;
 
   (* Mark task as finished when done button is pressed *)
@@ -235,7 +235,7 @@ let () =
   (* Get timers with command line arguments *)
   let ptasks =
     Sys.argv |> function
-      | [| _ ; name |] -> read_log name
+    | [| _ ; name |] -> read_log name
     | _ -> failwith "Needs exactly one argument, filename of your log file."
   in
 
