@@ -113,7 +113,7 @@ class ptask
 
     val cycle : of_timer list = cycle
     val cycle_length = cycle_length
-    (* Posiition in the cycle, lead to problem if cycle is empty *)
+    (* Position in the cycle, lead to problem if cycle is empty *)
     val mutable position = -1
     val mutable current_timer = empty_timer ()
     val mutable number_of_pomodoro = number_of_pomodoro
