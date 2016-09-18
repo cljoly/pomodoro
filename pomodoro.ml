@@ -197,7 +197,7 @@ let on_finish timer =
   |> ignore
 ;;
 
-(* Read log containg tasks and settings *)
+(* Read log containing tasks and settings *)
 let read_log filename =
   let log = Sexp.load_sexp_conv_exn filename log_of_sexp in
   let durations = [
