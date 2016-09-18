@@ -136,7 +136,8 @@ class ptask
     method summary =
       sprintf "%s: %s\nPomodoro: %i" name description number_of_pomodoro
 
-    (* Update a task with datas of an other, provided they have the same ids *)
+    (* Update a task with data of an other, provided they have the same ids.
+     * Keeps timer running, since they are kept *)
     method update_with (another:'s) =
       assert (another#id = s#id);
       {<
