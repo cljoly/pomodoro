@@ -16,6 +16,23 @@ open LTerm_widget;;
 module T = Time;;
 module Ts = Time.Span;;
 
+(* Represents actual states and states read from log file
+ * (avl stands for actual_vs_log) *)
+class ['a] avl read_value = object(s)
+  val log : 'a = read_value
+  val mutable actual = read_value
+  method get_log = log
+  method private get_actual = actual
+  (* Shorthand *)
+  method get = s#get_actual
+  (* Update actual value, but keep log as-is, giving a new object if we try to
+   * change it *)
+  method update_log new_log_value = {< log = new_log_value >}
+  method private update_actual updated_value =
+    actual <- updated_value
+  method set = s#update_actual
+end;;
+
 (* Simple log of pomodoros & tasks, with settings *)
 type settings = {
   (* Defaults from pomodoro guide *)
@@ -93,59 +110,64 @@ class ptask
   =
   let cycle_length = List.length cycle in
   object(s:'s)
-    val name : string = name
-    val description : string = description
-    method name = name
-    method description = description
+    val name : string avl = new avl name
+    val description : string avl = new avl description
+    method name = name#get
+    method description = description#get
     (* Way to identify a task uniquely, XXX based on its name for now *)
-    method id = String.hash name
+    method id = String.hash s#name
 
-    val mutable status = match done_at with Some _ -> Done | None -> Active
-    val done_at = Option.value ~default:"" done_at
-    method done_at = done_at
-    method mark_done = status <- Done
-    method status = status
+    val status =
+      new avl (match done_at with Some _ -> Done | None -> Active)
+    val done_at =
+      new avl (Option.value ~default:"" done_at)
+    method done_at = done_at#get
+    method mark_done = status#set Done
+    method status = status#get
     method is_done =
-      status = Done
+      status#get = Done
 
-    val num : int option = num
-    method num = num
+    val num : int option avl = new avl num
+    method num = num#get
 
-    val cycle : of_timer list = cycle
+    val cycle : of_timer list avl = new avl cycle
     val cycle_length = cycle_length
     (* Position in the cycle, lead to problem if cycle is empty *)
     val mutable position = -1
     val mutable current_timer = empty_timer ()
-    val mutable number_of_pomodoro = number_of_pomodoro
-    method number_of_pomodoro = number_of_pomodoro
+    val number_of_pomodoro = new avl number_of_pomodoro
+    method number_of_pomodoro = number_of_pomodoro#get
     (* Return current timer. Cycles through timers, as one finishes *)
     method current_timer =
       if
-        (status = Active)
+        (status#get = Active)
         && current_timer#is_finished
       then begin
         if current_timer#of_type = Pomodoro then
-          number_of_pomodoro <- number_of_pomodoro + 1;
+          number_of_pomodoro#set (number_of_pomodoro#get + 1);
         (* Circle through positions *)
         position <- (position + 1) mod cycle_length;
-        current_timer <- simple_timer (List.nth_exn cycle position);
+        current_timer <- simple_timer (List.nth_exn cycle#get position);
       end;
       current_timer
 
     method summary =
-      sprintf "%s: %s\nPomodoro: %i" name description number_of_pomodoro
+      sprintf "%s: %s\nPomodoro: %i"
+        name#get
+        description#get
+        number_of_pomodoro#get
 
     (* Update a task with data of an other, provided they have the same ids.
      * Keeps timer running, since they are kept *)
     method update_with (another:'s) =
       assert (another#id = s#id);
       {<
-        name = another#name;
-        description = another#description;
-        done_at = another#done_at;
-        num = another#num;
-        number_of_pomodoro = another#number_of_pomodoro;
-        status = another#status
+        name = name#update_log another#name;
+        description = description#update_log another#description;
+        done_at = done_at#update_log another#done_at;
+        num = num#update_log another#num;
+        number_of_pomodoro = number_of_pomodoro#update_log another#number_of_pomodoro;
+        status = status#update_log another#status
       >}
   end;;
 
