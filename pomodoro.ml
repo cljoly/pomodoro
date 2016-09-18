@@ -133,8 +133,8 @@ class ptask
       end;
       current_timer
 
-    method summary = sprintf "%s: %s\nPomodoro: %i" name description
-        number_of_pomodoro
+    method summary =
+      sprintf "%s: %s\nPomodoro: %i" name description number_of_pomodoro
 
     (* Update a task with datas of an other, provided they have the same ids *)
     method update_with (another:'s) =
