@@ -52,7 +52,7 @@ type log = {
 } [@@deriving sexp]
 
 (* Interval used by lwt_engine timer *)
-let ticking = 0.5;;
+let tick = 0.5;;
 
 (* Some type to describe states of ptasks *)
 type status = Active | Done;;
@@ -258,7 +258,7 @@ let main ~ptasks () =
   vbox#add exit_btn;
 
   (* Update the time every second *)
-  (Lwt_engine.on_timer ticking true
+  (Lwt_engine.on_timer tick true
      (fun _ ->
         clock#set_text (remaining_time ());
         ptask#set_text (task_summary ())
