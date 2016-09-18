@@ -92,16 +92,21 @@ class ptask
     number_of_pomodoro
   =
   let cycle_length = List.length cycle in
-  object(s)
+  object(s:'s)
     val name : string = name
     val description : string = description
     method name = name
     method description = description
+    (* Way to identify a task uniquely, XXX based on its name for now *)
+    method id = String.hash name
 
     val mutable status = match done_at with Some _ -> Done | None -> Active
     val done_at = Option.value ~default:"" done_at
+    method done_at = done_at
     method mark_done = status <- Done
-    method is_done = status = Done
+    method status = status
+    method is_done =
+      status = Done
 
     val num : int option = num
     method num = num
@@ -112,6 +117,7 @@ class ptask
     val mutable position = -1
     val mutable current_timer = empty_timer ()
     val mutable number_of_pomodoro = number_of_pomodoro
+    method number_of_pomodoro = number_of_pomodoro
     (* Return current timer. Cycles through timers, as one finishes *)
     method current_timer =
       if
@@ -129,6 +135,18 @@ class ptask
 
     method summary = sprintf "%s: %s\nPomodoro: %i" name description
         number_of_pomodoro
+
+    (* Update a task with datas of an other, provided they have the same ids *)
+    method update_with (another:'s) =
+      assert (another#id = s#id);
+      {<
+        name = another#name;
+        description = another#description;
+        done_at = another#done_at;
+        num = another#num;
+        number_of_pomodoro = another#number_of_pomodoro;
+        status = another#status
+      >}
   end;;
 
 (* Pretty printing of remaining time *)
