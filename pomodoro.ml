@@ -124,8 +124,7 @@ class ptask
         (status = Active)
         && current_timer#is_finished
       then begin
-        if current_timer#of_type = Pomodoro
-        then
+        if current_timer#of_type = Pomodoro then
           number_of_pomodoro <- number_of_pomodoro + 1;
         (* Circle through positions *)
         position <- (position + 1) mod cycle_length;
