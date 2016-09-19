@@ -185,9 +185,7 @@ let read_log filename =
 ;;
 
 (* A view with both task and pomodoro timers *)
-let task_timer ~ptasks () =
-  let waiter, wakener = wait () in
-
+let task_timer ~ptasks (main_frame:frame) () =
   let current_task ~default f =
     get_pending ptasks
     |> Option.value_map ~f ~default
@@ -207,30 +205,24 @@ let task_timer ~ptasks () =
   let clock = new label (remaining_time ()) in
   let ptask = new label "" in
   let done_btn = new button "Done" in
-  let exit_btn = new button "Exit" in
   vbox#add clock;
   vbox#add ptask;
   vbox#add done_btn;
-  vbox#add exit_btn;
+  main_frame#set (vbox :> t);
 
   (* Update the time every second *)
   (Lwt_engine.on_timer ticking true
      (fun _ ->
         clock#set_text (remaining_time ());
-        ptask#set_text (task_summary ())
+        ptask#set_text (task_summary ());
+        (* XXX Quite heavy *)
+        main_frame#set (vbox :> t);
      ))
   |> ignore;
 
   (* Mark task as finished when done button is pressed *)
   done_btn#on_click
     (fun () -> current_task ~default:() (fun t -> t#mark_done));
-  (* Quit when the exit button is clicked *)
-  exit_btn#on_click (wakeup wakener);
-
-  (* Run in the standard terminal *)
-  Lazy.force LTerm.stdout
-  >>= fun term ->
-  run term vbox waiter
 ;;
 
 (* A view listing tasks *)
@@ -238,7 +230,7 @@ let listing ~ptasks () =
   let waiter, wakener = wait () in
 
   let vbox = new vbox in
-  let task_list = new frame in
+  let main_frame = new frame in
 
   let display_done_task = ref false in
 
@@ -250,10 +242,10 @@ let listing ~ptasks () =
       (* TODO Add scroller, improve summary *)
       to_add#add task
     );
-    task_list#set to_add;
+    main_frame#set to_add;
   in
   list_task ();
-  vbox#add task_list;
+  vbox#add main_frame;
 
   (* Add buttons *)
   let pomodoro_btn = new button "Pomodoro" in
@@ -265,8 +257,7 @@ let listing ~ptasks () =
 
   (* Go to pomodoro view *)
   pomodoro_btn#on_click (fun () ->
-    task_timer ~ptasks ()
-    |> ignore
+    task_timer ~ptasks main_frame ();
   );
 
   (* Show don task or not *)
