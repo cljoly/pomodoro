@@ -184,7 +184,8 @@ let read_log filename =
     )
 ;;
 
-let main ~ptasks () =
+(* A view with both task and pomodoro timers *)
+let task_timer ~ptasks () =
   let waiter, wakener = wait () in
 
   let current_task ~default f =
@@ -230,6 +231,40 @@ let main ~ptasks () =
   Lazy.force LTerm.stdout
   >>= fun term ->
   run term vbox waiter
+;;
+
+(* A view listing tasks *)
+let listing ~ptasks () =
+  let waiter, wakener = wait () in
+
+  let vbox = new vbox in
+
+  (* List tasks *)
+  List.iter ptasks ~f:(fun ptask ->
+    if not ptask#is_done then
+    let task = new label  ptask#summary in
+    (* TODO Add scroller, improve summary *)
+    vbox#add task
+  );
+
+  (* Add buttons *)
+  let pomodoro_btn = new button "Pomodoro" in
+  let exit_btn = new button "Exit" in
+  vbox#add pomodoro_btn;
+  vbox#add exit_btn;
+
+  (* Go to pomodoro view *)
+  pomodoro_btn#on_click (fun () ->
+    task_timer ~ptasks () |> ignore);
+
+  (* Quit when the exit button is clicked *)
+  exit_btn#on_click (wakeup wakener);
+
+  (* Run in the standard terminal *)
+  Lazy.force LTerm.stdout
+  >>= fun term ->
+  run term vbox waiter
+;;
 
 let () =
   (* Get timers with command line arguments *)
@@ -239,6 +274,6 @@ let () =
     | _ -> failwith "Needs exactly one argument, filename of your log file."
   in
 
-  Lwt_main.run (main ~ptasks ())
+  Lwt_main.run (listing ~ptasks ())
 
 ;;
