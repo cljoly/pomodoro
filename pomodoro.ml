@@ -265,7 +265,9 @@ let listing ~ptasks () =
 
   (* Go to pomodoro view *)
   pomodoro_btn#on_click (fun () ->
-    task_timer ~ptasks () |> ignore);
+    task_timer ~ptasks ()
+    |> ignore
+  );
 
   (* Show don task or not *)
   toggle_done_btn#on_click (fun () ->
