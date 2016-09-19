@@ -21,7 +21,11 @@ type settings = {
   (* Defaults from pomodoro guide *)
   pomodoro_duration : float;
   short_break_duration : float;
-  long_break_duration : float
+  long_break_duration : float;
+  (* Command to play sound while pomodoro is running *)
+  ticking_command : string;
+  (* Command to play sound when pomodoro is finished *)
+  ringing_command : string;
 } [@@deriving sexp]
 type task_sexp = {
   name : string;
@@ -46,7 +50,7 @@ type of_timer =
 
 (* Create a timer of duration (in minute). The on_exit function is called the
  * first time the timer is finished *)
-class timer duration of_type ~on_finish name = object(s)
+class timer duration of_type ~on_finish name running_meanwhile running_when_done = object(s)
   val name : string = name
   method name = name
   val duration = Ts.of_min duration
@@ -74,10 +78,27 @@ class timer duration of_type ~on_finish name = object(s)
       None
     end
   method is_finished = Option.is_none s#remaining
+
+  (* Command running as long as the timer is not finished, launched at
+   * instanciation *)
+  val running_meanwhile =
+    Lwt_process.shell running_meanwhile
+    |> Lwt_process.open_process_none
+  (* Stop when necessary *)
+  method update_running_meanwhile =
+    if s#is_finished
+    then running_meanwhile#terminate
+
+  (* Command to run when finish *)
+  val running_when_done = running_when_done
+  method run_done =
+    Lwt_process.shell running_when_done
+    |> Lwt_process.exec
+    |> ignore
 end;;
 
 let empty_timer () =
-  new timer 0. Short_break ~on_finish:(fun _ -> ()) ""
+  new timer 0. Short_break ~on_finish:(fun _ -> ()) "" "" ""
 ;;
 
 (* A task (written ptask to void conflict with lwt), like "Learn OCaml". Cycle
@@ -150,7 +171,8 @@ let rec get_pending = function
 let on_finish timer =
   sprintf "notify-send '%s ended.'" timer#name
   |> Sys.command
-  |> ignore
+  |> ignore;
+  timer#run_done
 ;;
 
 (* Read log containg tasks and settings *)
@@ -162,8 +184,10 @@ let read_log filename =
     ( Long_break, (log.settings.long_break_duration, "Long break") )
   ] in
   let simple_timer of_timer = (* Simplified instanciation of class timer *)
+    let ticking_command = log.settings.ticking_command in
+    let ringing_command = log.settings.ringing_command in
     let (duration, name) = List.Assoc.find_exn durations of_timer in
-    new timer duration of_timer ~on_finish name
+    new timer duration of_timer ~on_finish name ticking_command ringing_command
   in
   (* We do 4 pomodoroes, with a short break between each, before taking a long
    * break *)

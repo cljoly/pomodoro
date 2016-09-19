@@ -3,6 +3,8 @@
   (pomodoro_duration 25)
   (short_break_duration 5)
   (long_break_duration 30)
+  (ticking_command "")
+  (ringing_command "")
  ))
  (tasks(
   ;; (((name "Task name") (description "Task description")
