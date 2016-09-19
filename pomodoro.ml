@@ -93,7 +93,7 @@ class timer duration of_type ~on_finish name running_meanwhile running_when_done
   val running_when_done = running_when_done
   method run_done =
     Lwt_process.shell running_when_done
-    |> Lwt_process.exec
+    |> Lwt_process.exec ~timeout:4. (* TODO Configure it *)
     |> ignore
 end;;
 
