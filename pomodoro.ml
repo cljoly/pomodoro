@@ -238,24 +238,39 @@ let listing ~ptasks () =
   let waiter, wakener = wait () in
 
   let vbox = new vbox in
+  let task_list = new frame in
 
-  (* List tasks *)
-  List.iter ptasks ~f:(fun ptask ->
-    if not ptask#is_done then
-    let task = new label  ptask#summary in
-    (* TODO Add scroller, improve summary *)
-    vbox#add task
-  );
+  let display_done_task = ref false in
+
+  let list_task () =
+    let to_add = new vbox in
+    List.iter ptasks ~f:(fun ptask ->
+      if !display_done_task || not ptask#is_done then
+      let task = new label  ptask#summary in
+      (* TODO Add scroller, improve summary *)
+      to_add#add task
+    );
+    task_list#set to_add;
+  in
+  list_task ();
+  vbox#add task_list;
 
   (* Add buttons *)
   let pomodoro_btn = new button "Pomodoro" in
+  let toggle_done_btn = new button "Toggle done" in
   let exit_btn = new button "Exit" in
   vbox#add pomodoro_btn;
+  vbox#add toggle_done_btn;
   vbox#add exit_btn;
 
   (* Go to pomodoro view *)
   pomodoro_btn#on_click (fun () ->
     task_timer ~ptasks () |> ignore);
+
+  (* Show don task or not *)
+  toggle_done_btn#on_click (fun () ->
+    display_done_task := not !display_done_task;
+    list_task ());
 
   (* Quit when the exit button is clicked *)
   exit_btn#on_click (wakeup wakener);
