@@ -16,6 +16,28 @@ open LTerm_widget;;
 module T = Time;;
 module Ts = Time.Span;;
 
+(* Represents actual states and states read from log file
+ * (avl stands for actual_vs_log) *)
+class ['a] avl read_value = object(s)
+  val log : 'a = read_value
+  val mutable actual = read_value
+  method get_log = log
+  method private get_actual = actual
+  (* Shorthand *)
+  method get = s#get_actual
+  (* Update actual value, but keep log as-is, giving a new object if we try to
+   * change it *)
+  method update_log new_log_value = {< log = new_log_value >}
+  method private update_actual updated_value =
+    actual <- updated_value
+  method set = s#update_actual
+  (* Turn the actual state to the log one *)
+  method turn2log = s#update_actual s#get_log
+  (* Gives both values if they differs *)
+  method both =
+    Option.some_if (log <> actual) (log, actual)
+end;;
+
 (* Simple log of pomodoros & tasks, with settings *)
 type settings = {
   (* Defaults from pomodoro guide *)
@@ -39,7 +61,8 @@ type log = {
 } [@@deriving sexp]
 
 (* Interval used by lwt_engine timer *)
-let ticking = 0.5;;
+let tick = 0.5;;
+let log_tick = 3. *. tick;;
 
 (* Some type to describe states of ptasks *)
 type status = Active | Done;;
@@ -104,6 +127,7 @@ let empty_timer () =
 (* A task (written ptask to void conflict with lwt), like "Learn OCaml". Cycle
  * sets the number and order of timers *)
 class ptask
+    ?num (* Position in log file, useful to order tasks *)
     name
     description
     cycle
@@ -112,40 +136,95 @@ class ptask
     number_of_pomodoro
   =
   let cycle_length = List.length cycle in
-  object(s)
-    val name : string = name
-    val description : string = description
-    method name = name
-    method description = description
+  object(s:'s)
+    val name : string avl = new avl name
+    val description : string avl = new avl description
+    method name = name#get
+    method description = description#get
+    (* Way to identify a task uniquely, XXX based on its name for now *)
+    method id = String.hash s#name
 
-    val mutable status = match done_at with Some _ -> Done | None -> Active
-    val done_at = Option.value ~default:"" done_at
-    method mark_done = status <- Done
-    method is_done = status = Done
+    val status =
+      new avl (match done_at with Some _ -> Done | None -> Active)
+    val done_at = new avl done_at
+    method done_at = done_at#get
+    method mark_done = status#set Done
+    method status = status#get
+    method is_done =
+      status#get = Done
 
-    val cycle : of_timer list = cycle
+    val num : int option avl = new avl num
+    method num = num#get
+
+    val cycle : of_timer list avl = new avl cycle
     val cycle_length = cycle_length
-    (* Posiition in the cycle, lead to problem if cycle is empty *)
+    (* Position in the cycle, lead to problem if cycle is empty *)
     val mutable position = -1
     val mutable current_timer = empty_timer ()
-    val mutable number_of_pomodoro = number_of_pomodoro
+    val number_of_pomodoro = new avl number_of_pomodoro
+    method number_of_pomodoro = number_of_pomodoro#get
     (* Return current timer. Cycles through timers, as one finishes *)
     method current_timer =
       if
-        (status = Active)
+        (status#get = Active)
         && current_timer#is_finished
       then begin
-        if current_timer#of_type = Pomodoro
-        then
-          number_of_pomodoro <- number_of_pomodoro + 1;
+        if current_timer#of_type = Pomodoro then
+          number_of_pomodoro#set (number_of_pomodoro#get + 1);
         (* Circle through positions *)
         position <- (position + 1) mod cycle_length;
-        current_timer <- simple_timer (List.nth_exn cycle position);
+        current_timer <- simple_timer (List.nth_exn cycle#get position);
       end;
       current_timer
 
-    method summary = sprintf "%s: %s\nPomodoro: %i" name description
-        number_of_pomodoro
+    (* Returns a summary of the task, short or with more details *)
+    method private summary ~long =
+      (* f converts to string *)
+      let print_both avl ~f = match avl#both with
+        | None -> f avl#get
+        | Some (log_value, actual_value) ->
+            sprintf "%s (log: %s)" (f actual_value) (f log_value)
+      in
+      (* Identity *) let id = fun a -> a in
+      let short_summary = sprintf "%s: %s"
+        (print_both ~f:id name)
+        (print_both ~f:id description)
+      in
+      if long
+      then
+      (* Display only what is needed *)
+      [ Some short_summary
+      ; Option.map done_at#get
+        ~f:(fun _ -> "Done at" ^ (print_both
+          ~f:(function None -> "None" | Some date -> date) done_at))
+      ; "With " ^ (print_both number_of_pomodoro ~f:Int.to_string) ^ " pomodoro"
+        |> Option.some
+      ] |> List.filter_map ~f:id
+      |> String.concat ~sep:"\n"
+      else short_summary
+
+  method short_summary = s#summary ~long:false
+  method long_summary = s#summary ~long:true
+
+
+    (* Update a task with data of an other, provided they have the same ids.
+     * Keeps timer running, since they are kept as-is. Updates states when it
+     * makes sens *)
+    method update_with (another:'s) =
+      let update_actual avl =
+        avl#turn2log;
+        avl
+      in
+      assert (another#id = s#id);
+      {<
+        name = name#update_log another#name |> update_actual;
+        description = description#update_log another#description |> update_actual;
+        num = num#update_log another#num |> update_actual;
+        number_of_pomodoro = number_of_pomodoro#update_log another#number_of_pomodoro;
+        (* Updating status, but keeping potentially different date *)
+        done_at = done_at#update_log another#done_at;
+        status = status#update_log another#status |> update_actual
+      >}
   end;;
 
 (* Pretty printing of remaining time *)
@@ -175,7 +254,9 @@ let on_finish timer =
   timer#run_done
 ;;
 
-(* Read log containg tasks and settings *)
+type read_log = { name : string ; log : ptask list };;
+
+(* Read log containing tasks and settings *)
 let read_log filename =
   let log = Sexp.load_sexp_conv_exn filename log_of_sexp in
   let durations = [
@@ -196,22 +277,51 @@ let read_log filename =
     ; Pomodoro ; Short_break
     ; Pomodoro ; Short_break
     ; Pomodoro ; Long_break
-    ] in
-  List.map log.tasks ~f:(fun (task_sexp:task_sexp) ->
-      new ptask
-        task_sexp.name
-        task_sexp.description
-        cycle
-        simple_timer
-        ?done_at:task_sexp.done_at
-        (Option.value ~default:0 task_sexp.done_with)
-    )
+    ]
+  in
+  {
+    name = filename;
+    log = List.mapi log.tasks
+        ~f:(fun task_position (task_sexp:task_sexp) ->
+            new ptask
+              ~num:task_position
+              task_sexp.name
+              task_sexp.description
+              cycle
+              simple_timer
+              ?done_at:task_sexp.done_at
+              (Option.value ~default:0 task_sexp.done_with)
+          );
+  }
+;;
+
+(* Update entries, dropping all tasks in old log file if they are not in the new
+ * one and adding those in the new log file, even if they were not in the new one *)
+let reread_log r_log =
+  let name = r_log.name in (* Name is common to both logs *)
+  let old_log = r_log.log in
+  let new_log = (read_log name).log in
+  let log =
+    List.map new_log
+      ~f:(fun new_task ->
+          List.find_map old_log ~f:(fun old_task ->
+              if new_task#id = old_task#id
+              then Some (old_task#update_with new_task)
+              else None
+            )
+          |> Option.value ~default:new_task
+        )
+  in
+  { name ; log }
 ;;
 
 (* A view with both task and pomodoro timers *)
 let task_timer ~ptasks (main_frame:frame) () =
+  (* To allow easier update *)
+  let ptasks = ref ptasks in
+
   let current_task ~default f =
-    get_pending ptasks
+    get_pending !ptasks.log
     |> Option.value_map ~f ~default
   in
   (* Allow to get remainging time for current ptask, if any one is yet active *)
@@ -222,7 +332,7 @@ let task_timer ~ptasks (main_frame:frame) () =
          String.concat [ (time_remaining ~timer) ; "\n" ; timer#name ])
   in
   let task_summary () =
-    current_task ~default:"" (fun ptask -> ptask#summary)
+    current_task ~default:"" (fun ptask -> ptask#long_summary)
   in
 
   let vbox = new vbox in
@@ -235,13 +345,19 @@ let task_timer ~ptasks (main_frame:frame) () =
   main_frame#set (vbox :> t);
 
   (* Update the time every second *)
-  (Lwt_engine.on_timer ticking true
+  (Lwt_engine.on_timer tick true
      (fun _ ->
         clock#set_text (remaining_time ());
         ptask#set_text (task_summary ());
         (* XXX Quite heavy *)
         main_frame#set (vbox :> t);
      ))
+  |> ignore;
+
+  (* Update log file *)
+  (Lwt_engine.on_timer log_tick true
+     (fun _ ->
+        ptasks := reread_log !ptasks))
   |> ignore;
 
   (* Mark task as finished when done button is pressed *)
@@ -260,9 +376,9 @@ let listing ~ptasks () =
 
   let list_task () =
     let to_add = new vbox in
-    List.iter ptasks ~f:(fun ptask ->
+    List.iter ptasks.log ~f:(fun ptask ->
       if !display_done_task || not ptask#is_done then
-      let task = new label  ptask#summary in
+      let task = new label  ptask#short_summary in
       (* TODO Add scroller, improve summary *)
       to_add#add task
     );
