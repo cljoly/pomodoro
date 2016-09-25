@@ -31,6 +31,8 @@ class ['a] avl read_value = object(s)
   method private update_actual updated_value =
     actual <- updated_value
   method set = s#update_actual
+  (* Turn the actual state to the log one *)
+  method turn2log = s#update_actual s#get_log
 end;;
 
 (* Simple log of pomodoros & tasks, with settings *)
@@ -53,7 +55,7 @@ type log = {
 
 (* Interval used by lwt_engine timer *)
 let tick = 0.5;;
-let log_tick = 23. *. tick;;
+let log_tick = 3. *. tick;;
 
 (* Some type to describe states of ptasks *)
 type status = Active | Done;;
@@ -159,16 +161,22 @@ class ptask
         number_of_pomodoro#get
 
     (* Update a task with data of an other, provided they have the same ids.
-     * Keeps timer running, since they are kept *)
+     * Keeps timer running, since they are kept as-is. Updates states when it
+     * makes sens *)
     method update_with (another:'s) =
+      let update_actual avl =
+        avl#turn2log;
+        avl
+      in
       assert (another#id = s#id);
       {<
-        name = name#update_log another#name;
-        description = description#update_log another#description;
-        done_at = done_at#update_log another#done_at;
-        num = num#update_log another#num;
+        name = name#update_log another#name |> update_actual;
+        description = description#update_log another#description |> update_actual;
+        num = num#update_log another#num |> update_actual;
         number_of_pomodoro = number_of_pomodoro#update_log another#number_of_pomodoro;
-        status = status#update_log another#status
+        (* Updating status, but keeping potentially different date *)
+        done_at = done_at#update_log another#done_at;
+        status = status#update_log another#status |> update_actual
       >}
   end;;
 
