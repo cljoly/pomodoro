@@ -33,6 +33,9 @@ class ['a] avl read_value = object(s)
   method set = s#update_actual
   (* Turn the actual state to the log one *)
   method turn2log = s#update_actual s#get_log
+  (* Gives both values if they differs *)
+  method both =
+    Option.some_if (log <> actual) (log, actual)
 end;;
 
 (* Simple log of pomodoros & tasks, with settings *)
@@ -155,10 +158,17 @@ class ptask
       current_timer
 
     method summary =
-      sprintf "%s: %s\nPomodoro: %i"
-        name#get
-        description#get
-        number_of_pomodoro#get
+      (* f converts to string *)
+      let print_both avl ~f = match avl#both with
+        | None -> f avl#get
+        | Some (log_value, actual_value) ->
+            sprintf "%s (log: %s)" (f actual_value) (f log_value)
+      in
+      (* Identity *) let id = fun a -> a in
+      sprintf "%s: %s\nPomodoro: %s"
+        (print_both ~f:id name)
+        (print_both ~f:id description)
+        (print_both number_of_pomodoro ~f:Int.to_string)
 
     (* Update a task with data of an other, provided they have the same ids.
      * Keeps timer running, since they are kept as-is. Updates states when it
