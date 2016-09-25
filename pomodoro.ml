@@ -125,8 +125,7 @@ class ptask
 
     val status =
       new avl (match done_at with Some _ -> Done | None -> Active)
-    val done_at =
-      new avl (Option.value ~default:"" done_at)
+    val done_at = new avl done_at
     method done_at = done_at#get
     method mark_done = status#set Done
     method status = status#get
@@ -172,10 +171,15 @@ class ptask
       in
       if long
       then
-      [ short_summary
-      ; "Done at" ^ (print_both ~f:id done_at)
+      (* Display only what is needed *)
+      [ Some short_summary
+      ; Option.map done_at#get
+        ~f:(fun _ -> "Done at" ^ (print_both
+          ~f:(function None -> "None" | Some date -> date) done_at))
       ; "With " ^ (print_both number_of_pomodoro ~f:Int.to_string) ^ " pomodoro"
-      ] |> String.concat ~sep:"\n"
+        |> Option.some
+      ] |> List.filter_map ~f:id
+      |> String.concat ~sep:"\n"
       else short_summary
 
   method short_summary = s#summary ~long:false
