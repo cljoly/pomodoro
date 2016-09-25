@@ -262,11 +262,12 @@ let read_log filename =
   let rec read_log tries =
     try Sexp.load_sexp_conv_exn filename log_of_sexp
     with exn ->
+      Unix.sleep (Int.of_float tick);
       if tries > 0
       then read_log (pred tries)
       else raise exn
   in
-  let log = read_log 10 in
+  let log = read_log 30 in
   let durations = [
     ( Pomodoro, (log.settings.pomodoro_duration, "Pomodoro") );
     ( Short_break, (log.settings.short_break_duration, "Short break") );
