@@ -375,9 +375,10 @@ let listing ~ptasks () =
     );
     main_frame#set to_add;
   in
-  (Lwt_engine.on_timer log_tick true
-     (fun _ -> list_task ()))
-  |> ignore;
+  let event_task_list =
+    (Lwt_engine.on_timer log_tick true
+       (fun _ -> list_task ()))
+  in
   vbox#add main_frame;
 
   (* Add buttons *)
@@ -390,6 +391,7 @@ let listing ~ptasks () =
 
   (* Go to pomodoro view *)
   pomodoro_btn#on_click (fun () ->
+    Lwt_engine.stop_event event_task_list;
     task_timer ~ptasks main_frame ();
   );
 
