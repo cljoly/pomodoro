@@ -53,6 +53,7 @@ type log = {
 
 (* Interval used by lwt_engine timer *)
 let tick = 0.5;;
+let log_tick = 23. *. tick;;
 
 (* Some type to describe states of ptasks *)
 type status = Active | Done;;
@@ -197,6 +198,8 @@ let on_finish timer =
   |> ignore
 ;;
 
+type read_log = { name : string ; log : ptask list };;
+
 (* Read log containing tasks and settings *)
 let read_log filename =
   let log = Sexp.load_sexp_conv_exn filename log_of_sexp in
@@ -216,24 +219,51 @@ let read_log filename =
     ; Pomodoro ; Short_break
     ; Pomodoro ; Short_break
     ; Pomodoro ; Long_break
-    ] in
-  List.mapi log.tasks ~f:(fun task_position (task_sexp:task_sexp) ->
-      new ptask
-        ~num:task_position
-        task_sexp.name
-        task_sexp.description
-        cycle
-        simple_timer
-        ?done_at:task_sexp.done_at
-        (Option.value ~default:0 task_sexp.done_with)
-    )
+    ]
+  in
+  {
+    name = filename;
+    log = List.mapi log.tasks
+      ~f:(fun task_position (task_sexp:task_sexp) ->
+        new ptask
+          ~num:task_position
+          task_sexp.name
+          task_sexp.description
+          cycle
+          simple_timer
+          ?done_at:task_sexp.done_at
+          (Option.value ~default:0 task_sexp.done_with)
+      );
+  }
+;;
+
+(* Update entries, dropping all tasks in old log file if they are not in the new
+ * one and adding those in the new log file, even if they were not in the new one *)
+let reread_log r_log =
+  let name = r_log.name in (* Name is common to both logs *)
+  let old_log = r_log.log in
+  let new_log = (read_log name).log in
+  let log =
+    List.map new_log
+      ~f:(fun new_task ->
+        List.find_map old_log ~f:(fun old_task ->
+          if new_task#id = old_task#id
+                then Some (old_task#update_with new_task)
+                else None
+                )
+        |> Option.value ~default:new_task
+        )
+  in
+  { name ; log }
 ;;
 
 let main ~ptasks () =
+  (* To allow easier update *)
+  let ptasks = ref ptasks in
   let waiter, wakener = wait () in
 
   let current_task ~default f =
-    get_pending ptasks
+    get_pending !ptasks.log
     |> Option.value_map ~f ~default
   in
   (* Allow to get remainging time for current ptask, if any one is yet active *)
@@ -263,6 +293,12 @@ let main ~ptasks () =
         clock#set_text (remaining_time ());
         ptask#set_text (task_summary ())
      ))
+  |> ignore;
+
+  (* Update log file *)
+  (Lwt_engine.on_timer log_tick true
+     (fun _ ->
+       ptasks := reread_log !ptasks))
   |> ignore;
 
   (* Mark task as finished when done button is pressed *)
