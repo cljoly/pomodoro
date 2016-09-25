@@ -157,7 +157,8 @@ class ptask
       end;
       current_timer
 
-    method summary =
+    (* Returns a summary of the task, short or with more details *)
+    method private summary ~long =
       (* f converts to string *)
       let print_both avl ~f = match avl#both with
         | None -> f avl#get
@@ -165,10 +166,21 @@ class ptask
             sprintf "%s (log: %s)" (f actual_value) (f log_value)
       in
       (* Identity *) let id = fun a -> a in
-      sprintf "%s: %s\nPomodoro: %s"
+      let short_summary = sprintf "%s: %s"
         (print_both ~f:id name)
         (print_both ~f:id description)
-        (print_both number_of_pomodoro ~f:Int.to_string)
+      in
+      if long
+      then
+      [ short_summary
+      ; "Done at" ^ (print_both ~f:id done_at)
+      ; "With " ^ (print_both number_of_pomodoro ~f:Int.to_string) ^ " pomodoro"
+      ] |> String.concat ~sep:"\n"
+      else short_summary
+
+  method short_summary = s#summary ~long:false
+  method long_summary = s#summary ~long:true
+
 
     (* Update a task with data of an other, provided they have the same ids.
      * Keeps timer running, since they are kept as-is. Updates states when it
@@ -292,7 +304,7 @@ let main ~ptasks () =
          String.concat [ (time_remaining ~timer) ; "\n" ; timer#name ])
   in
   let task_summary () =
-    current_task ~default:"" (fun ptask -> ptask#summary)
+    current_task ~default:"" (fun ptask -> ptask#long_summary)
   in
 
   let vbox = new vbox in
