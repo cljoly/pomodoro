@@ -317,9 +317,6 @@ let reread_log r_log =
 
 (* A view with both task and pomodoro timers *)
 let task_timer ~ptasks (main_frame:frame) () =
-  (* To allow easier update *)
-  let ptasks = ref ptasks in
-
   let current_task ~default f =
     get_pending !ptasks.log
     |> Option.value_map ~f ~default
@@ -354,12 +351,6 @@ let task_timer ~ptasks (main_frame:frame) () =
      ))
   |> ignore;
 
-  (* Update log file *)
-  (Lwt_engine.on_timer log_tick true
-     (fun _ ->
-        ptasks := reread_log !ptasks))
-  |> ignore;
-
   (* Mark task as finished when done button is pressed *)
   done_btn#on_click
     (fun () -> current_task ~default:() (fun t -> t#mark_done));
@@ -376,7 +367,7 @@ let listing ~ptasks () =
 
   let list_task () =
     let to_add = new vbox in
-    List.iter ptasks.log ~f:(fun ptask ->
+    List.iter !ptasks.log ~f:(fun ptask ->
       if !display_done_task || not ptask#is_done then
       let task = new label  ptask#short_summary in
       (* TODO Add scroller, improve summary *)
@@ -384,7 +375,9 @@ let listing ~ptasks () =
     );
     main_frame#set to_add;
   in
-  list_task ();
+  (Lwt_engine.on_timer log_tick true
+     (fun _ -> list_task ()))
+  |> ignore;
   vbox#add main_frame;
 
   (* Add buttons *)
@@ -415,12 +408,18 @@ let listing ~ptasks () =
 ;;
 
 let () =
-  (* Get timers with command line arguments *)
-  let ptasks =
+  (* Get timers with command line arguments, mutable to allow easier update *)
+  let ptasks = ref (
     Sys.argv |> function
     | [| _ ; name |] -> read_log name
     | _ -> failwith "Needs exactly one argument, filename of your log file."
-  in
+  ) in
+  (* Update log file *)
+  (Lwt_engine.on_timer log_tick true
+     (fun _ ->
+        ptasks := reread_log !ptasks))
+  |> ignore;
+
 
   Lwt_main.run (listing ~ptasks ())
 
