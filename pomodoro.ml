@@ -224,16 +224,16 @@ let read_log filename =
   {
     name = filename;
     log = List.mapi log.tasks
-      ~f:(fun task_position (task_sexp:task_sexp) ->
-        new ptask
-          ~num:task_position
-          task_sexp.name
-          task_sexp.description
-          cycle
-          simple_timer
-          ?done_at:task_sexp.done_at
-          (Option.value ~default:0 task_sexp.done_with)
-      );
+        ~f:(fun task_position (task_sexp:task_sexp) ->
+            new ptask
+              ~num:task_position
+              task_sexp.name
+              task_sexp.description
+              cycle
+              simple_timer
+              ?done_at:task_sexp.done_at
+              (Option.value ~default:0 task_sexp.done_with)
+          );
   }
 ;;
 
@@ -246,12 +246,12 @@ let reread_log r_log =
   let log =
     List.map new_log
       ~f:(fun new_task ->
-        List.find_map old_log ~f:(fun old_task ->
-          if new_task#id = old_task#id
-                then Some (old_task#update_with new_task)
-                else None
-                )
-        |> Option.value ~default:new_task
+          List.find_map old_log ~f:(fun old_task ->
+              if new_task#id = old_task#id
+              then Some (old_task#update_with new_task)
+              else None
+            )
+          |> Option.value ~default:new_task
         )
   in
   { name ; log }
@@ -298,7 +298,7 @@ let main ~ptasks () =
   (* Update log file *)
   (Lwt_engine.on_timer log_tick true
      (fun _ ->
-       ptasks := reread_log !ptasks))
+        ptasks := reread_log !ptasks))
   |> ignore;
 
   (* Mark task as finished when done button is pressed *)
