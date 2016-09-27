@@ -73,7 +73,12 @@ type of_timer =
 
 (* Create a timer of duration (in minute). The on_exit function is called the
  * first time the timer is finished *)
-class timer duration of_type ~on_finish name running_meanwhile running_when_done = object(s)
+class timer duration of_type ~on_finish name running_meanwhile running_when_done =
+  let run_meanwhile () =
+    Lwt_process.shell running_meanwhile
+    |> Lwt_process.open_process_none
+  in
+  object(s)
   val name : string = name
   method name = name
   val duration = Ts.of_min duration
@@ -104,13 +109,17 @@ class timer duration of_type ~on_finish name running_meanwhile running_when_done
 
   (* Command running as long as the timer is not finished, launched at
    * instanciation *)
-  val running_meanwhile =
-    Lwt_process.shell running_meanwhile
-    |> Lwt_process.open_process_none
-  (* Stop when necessary *)
+  val mutable running_meanwhile = run_meanwhile ()
+  (* Stop and keep running when necessary *)
   method update_running_meanwhile =
+    let make_sure_its_running () =
+      running_meanwhile#state
+      |> function | Lwt_process.Running -> ()
+        | Lwt_process.Exited _ -> running_meanwhile <- run_meanwhile ()
+    in
     if s#is_finished
     then running_meanwhile#terminate
+    else make_sure_its_running ()
 
   (* Command to run when finish *)
   val running_when_done = running_when_done
@@ -353,6 +362,9 @@ let task_timer ~ptasks (main_frame:frame) () =
   (* Update the time every second *)
   (Lwt_engine.on_timer tick true
      (fun _ ->
+        (* Make sure timer is in a consistent state *)
+        current_task ~default:() (fun ct -> ct#current_timer#update_running_meanwhile);
+        (* Update display *)
         clock#set_text (remaining_time ());
         ptask#set_text (task_summary ());
         (* XXX Quite heavy *)
