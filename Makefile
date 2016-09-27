@@ -1,2 +1,2 @@
 all:
-	corebuild -pkg lambda-term -pkg lwt pomodoro.byte
+	corebuild -pkg lambda-term -pkg lwt pomodoro.native
