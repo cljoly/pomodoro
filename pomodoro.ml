@@ -402,13 +402,15 @@ let listing ~ptasks () =
   in
   vbox#add main_frame;
 
-  (* Add buttons *)
+  (* Add buttons, in a flat box *)
+  let hbox = new hbox in
   let pomodoro_btn = new button "Pomodoro" in
   let toggle_done_btn = new button "Toggle done" in
   let exit_btn = new button "Exit" in
-  vbox#add pomodoro_btn;
-  vbox#add toggle_done_btn;
-  vbox#add exit_btn;
+  hbox#add pomodoro_btn;
+  hbox#add toggle_done_btn;
+  hbox#add exit_btn;
+  vbox#add hbox;
 
   (* Go to pomodoro view *)
   pomodoro_btn#on_click (fun () ->
