@@ -61,8 +61,8 @@ type log = {
 } [@@deriving sexp]
 
 (* Interval used by lwt_engine timer *)
-let tick = 0.5;;
-let log_tick = 3. *. tick;;
+let tick = 0.6;;
+let log_tick = 6. *. tick;;
 
 (* Some type to describe states of ptasks *)
 type status = Active | Done;;
