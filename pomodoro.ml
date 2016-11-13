@@ -106,6 +106,8 @@ class timer duration of_type ~on_finish name running_meanwhile running_when_done
       None
     end
   method is_finished = Option.is_none s#remaining
+  method cancel =
+    if not marked_finished then marked_finished <- true
 
   (* Command running as long as the timer is not finished, launched at
    * instanciation *)
@@ -185,6 +187,8 @@ class ptask
         current_timer <- simple_timer (List.nth_exn cycle#get position);
       end;
       current_timer
+    (* Allow to interrupt a task *)
+    method interrupt = current_timer#cancel
 
     (* Returns a summary of the task, short or with more details *)
     method private summary ~long =
@@ -314,7 +318,8 @@ let read_log filename =
 ;;
 
 (* Update entries, dropping all tasks in old log file if they are not in the new
- * one and adding those in the new log file, even if they were not in the new one *)
+ * one and adding those in the new log file, even if they were not in the new
+   one. Makes sure we stop timers of task going deeper in the list *)
 let reread_log r_log =
   let name = r_log.name in (* Name is common to both logs *)
   let old_log = r_log.log in
@@ -329,6 +334,12 @@ let reread_log r_log =
             )
           |> Option.value ~default:new_task
         )
+    |> (* Disable timer from tasks other than the first one *)
+      (function
+       | [] -> []
+       | (_ :: interrupted_tasks) as log ->
+          List.iter ~f:(fun t -> t#interrupt) interrupted_tasks; log
+      )
   in
   { name ; log }
 ;;
