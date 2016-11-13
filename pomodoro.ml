@@ -15,14 +15,96 @@ open LTerm_widget;;
 module T = Time;;
 module Ts = Time.Span;;
 
-module Param = struct
+module Param : sig
+  val tick : float
+  val log_tick : float
+end = struct
   (* Interval used by lwt_engine timer *)
   let tick = 0.6;;
   let log_tick = 6. *. tick;;
 end;;
 
 (* Task plumbery *)
-module Tasks = struct
+module Tasks : sig
+  type status = Active | Done
+  type of_timer = Pomodoro | Short_break | Long_break
+  class ['a] avl :
+    'a ->
+    object ('b)
+      val mutable actual : 'a
+      val log : 'a
+      method both : ('a * 'a) option
+      method get : 'a
+      method private get_actual : 'a
+      method get_log : 'a
+      method set : 'a -> unit
+      method turn2log : unit
+      method private update_actual : 'a -> unit
+      method update_log : 'a -> 'b
+    end
+  class timer :
+    float ->
+    of_timer ->
+    on_finish:('a -> unit) ->
+    string ->
+    string ->
+    string ->
+    object ('a)
+      val duration : Ts.t
+      val mutable marked_finished : bool
+      val name : string
+      val of_type : of_timer
+      val mutable running_meanwhile : Lwt_process.process_none
+      val running_when_done : string
+      val start_time : T.t
+      method private call_on_finish_once : unit
+      method cancel : unit
+      method is_finished : bool
+      method name : string
+      method of_type : of_timer
+      method remaining : Ts.t option
+      method run_done : unit
+      method update_running_meanwhile : unit
+    end
+  class ptask :
+    ?num:int ->
+    string ->
+    string ->
+    of_timer list ->
+    (of_timer -> timer) ->
+    ?done_at:string ->
+    int ->
+    object ('a)
+      val mutable current_timer : timer
+      val cycle : of_timer list avl
+      val cycle_length : int
+      val description : string avl
+      val done_at : string option avl
+      val name : string avl
+      val num : int option avl
+      val number_of_pomodoro : int avl
+      val mutable position : int
+      val status : status avl
+      method current_timer : timer
+      method description : string
+      method done_at : string option
+      method id : int
+      method interrupt : unit
+      method is_done : bool
+      method long_summary : string
+      method mark_done : unit
+      method name : string
+      method num : int option
+      method number_of_pomodoro : int
+      method short_summary : string
+      method status : status
+      method private summary : long:bool -> string
+      method update_with : 'a -> 'a
+    end
+  val time_remaining : timer:< remaining : Ts.t option; .. > -> string
+  val get_pending : ptask list -> ptask option
+  val on_finish : timer -> unit
+end = struct
   (* Some type to describe states of ptasks *)
   type status = Active | Done;;
   (* Type of timer *)
@@ -250,7 +332,11 @@ module Tasks = struct
 end;;
 
 (* Tools with log file *)
-module Log = struct
+module Log : sig
+  type read_log = { fname : string; log : Tasks.ptask list }
+  val read_log : string -> read_log
+  val reread_log : read_log -> read_log
+end = struct
     (* Simple log of pomodoros & tasks, with settings *)
     type settings = {
       (* Defaults from pomodoro guide *)
@@ -354,7 +440,10 @@ module Log = struct
   ;;
 end;;
 
-module Views = struct
+module Views : sig
+  val task_timer : ptasks:Log.read_log ref -> frame -> unit -> unit
+  val listing : ptasks:Log.read_log ref -> unit -> unit Lwt.t
+end = struct
   (* A view with both task and pomodoro timers *)
   let task_timer ~ptasks (main_frame:frame) () =
     let current_task ~default f =
