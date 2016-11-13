@@ -337,80 +337,80 @@ module Log : sig
   val read_log : string -> read_log
   val reread_log : read_log -> read_log
 end = struct
-    (* Simple log of pomodoros & tasks, with settings *)
-    type settings = {
-      (* Defaults from pomodoro guide *)
-      pomodoro_duration : float;
-      short_break_duration : float;
-      long_break_duration : float;
-      (* Command to play sound while pomodoro is running *)
-      ticking_command : string;
-      (* Command to play sound when pomodoro is finished *)
-      ringing_command : string;
-    } [@@deriving sexp]
-    type task_sexp = {
-      name : string;
-      description : string;
-      done_at : string sexp_option; (* date and time iso8601 like 2016-09-10T14:57:25 *)
-      done_with : int sexp_option; (* Number of pomodoro used *)
-      interuption : int sexp_option; (* Track interuptions *)
-      (* Write down an estimation of the number of needed pomodoro *)
-      estimation : int sexp_option;
-    } [@@deriving sexp]
-    type log = {
-      settings : settings;
-      tasks : task_sexp list
-    } [@@deriving sexp]
+  (* Simple log of pomodoros & tasks, with settings *)
+  type settings = {
+    (* Defaults from pomodoro guide *)
+    pomodoro_duration : float;
+    short_break_duration : float;
+    long_break_duration : float;
+    (* Command to play sound while pomodoro is running *)
+    ticking_command : string;
+    (* Command to play sound when pomodoro is finished *)
+    ringing_command : string;
+  } [@@deriving sexp]
+  type task_sexp = {
+    name : string;
+    description : string;
+    done_at : string sexp_option; (* date and time iso8601 like 2016-09-10T14:57:25 *)
+    done_with : int sexp_option; (* Number of pomodoro used *)
+    interuption : int sexp_option; (* Track interuptions *)
+    (* Write down an estimation of the number of needed pomodoro *)
+    estimation : int sexp_option;
+  } [@@deriving sexp]
+  type log = {
+    settings : settings;
+    tasks : task_sexp list
+  } [@@deriving sexp]
 
-    (* fname stands for filename *)
-    type read_log = { fname : string ; log : Tasks.ptask list }
+  (* fname stands for filename *)
+  type read_log = { fname : string ; log : Tasks.ptask list }
 
-    (* Read log containing tasks and settings, tries multiple times since user may
-     * edit file and lead to temporal removal *)
-    let read_log filename =
-      let rec read_log tries =
-        try Sexp.load_sexp_conv_exn filename log_of_sexp
-        with exn ->
-          Unix.sleep (Int.of_float Param.tick);
-          if tries > 0
-          then read_log (pred tries)
-          else raise exn
-      in
-      let log = read_log 30 in
-      let durations = [
-        ( Tasks.Pomodoro, (log.settings.pomodoro_duration, "Pomodoro") );
-        ( Tasks.Short_break, (log.settings.short_break_duration, "Short break") );
-        ( Tasks.Long_break, (log.settings.long_break_duration, "Long break") )
-      ] in
-      let simple_timer of_timer = (* Simplified instanciation of class timer *)
-        let ticking_command = log.settings.ticking_command in
-        let ringing_command = log.settings.ringing_command in
-        let (duration, name) = List.Assoc.find_exn durations of_timer in
-        new Tasks.timer duration of_timer ~on_finish:Tasks.on_finish name ticking_command ringing_command
-      in
-      (* We do 4 pomodoroes, with a short break between each, before taking a long
-       * break *)
-      let cycle = (* TODO Allow to configure this *)
-        [ Tasks.Pomodoro ; Tasks.Short_break
-        ; Tasks.Pomodoro ; Tasks.Short_break
-        ; Tasks.Pomodoro ; Tasks.Short_break
-        ; Tasks.Pomodoro ; Tasks.Long_break
-        ]
-      in
-      {
-        fname = filename;
-        log = List.mapi log.tasks
-            ~f:(fun task_position (task_sexp:task_sexp) ->
-                new Tasks.ptask
-                  ~num:task_position
-                  task_sexp.name
-                  task_sexp.description
-                  cycle
-                  simple_timer
-                  ?done_at:task_sexp.done_at
-                  (Option.value ~default:0 task_sexp.done_with)
-              );
-      }
+  (* Read log containing tasks and settings, tries multiple times since user may
+   * edit file and lead to temporal removal *)
+  let read_log filename =
+    let rec read_log tries =
+      try Sexp.load_sexp_conv_exn filename log_of_sexp
+      with exn ->
+        Unix.sleep (Int.of_float Param.tick);
+        if tries > 0
+        then read_log (pred tries)
+        else raise exn
+    in
+    let log = read_log 30 in
+    let durations = [
+      ( Tasks.Pomodoro, (log.settings.pomodoro_duration, "Pomodoro") );
+      ( Tasks.Short_break, (log.settings.short_break_duration, "Short break") );
+      ( Tasks.Long_break, (log.settings.long_break_duration, "Long break") )
+    ] in
+    let simple_timer of_timer = (* Simplified instanciation of class timer *)
+      let ticking_command = log.settings.ticking_command in
+      let ringing_command = log.settings.ringing_command in
+      let (duration, name) = List.Assoc.find_exn durations of_timer in
+      new Tasks.timer duration of_timer ~on_finish:Tasks.on_finish name ticking_command ringing_command
+    in
+    (* We do 4 pomodoroes, with a short break between each, before taking a long
+     * break *)
+    let cycle = (* TODO Allow to configure this *)
+      [ Tasks.Pomodoro ; Tasks.Short_break
+      ; Tasks.Pomodoro ; Tasks.Short_break
+      ; Tasks.Pomodoro ; Tasks.Short_break
+      ; Tasks.Pomodoro ; Tasks.Long_break
+      ]
+    in
+    {
+      fname = filename;
+      log = List.mapi log.tasks
+          ~f:(fun task_position (task_sexp:task_sexp) ->
+              new Tasks.ptask
+                ~num:task_position
+                task_sexp.name
+                task_sexp.description
+                cycle
+                simple_timer
+                ?done_at:task_sexp.done_at
+                (Option.value ~default:0 task_sexp.done_with)
+            );
+    }
 
   (* Update entries, dropping all tasks in old log file if they are not in the new
    * one and adding those in the new log file, even if they were not in the new
