@@ -9,7 +9,6 @@
  *)
 open Core.Std;;
 
-open Lwt_react;;
 open Lwt;;
 open LTerm_widget;;
 
