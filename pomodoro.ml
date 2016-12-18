@@ -465,9 +465,9 @@ end = struct
     let clock = new label (remaining_time ()) in
     let ptask = new label "" in
     let done_btn = new button "Done" in
-    vbox#add clock;
-    vbox#add ptask;
-    vbox#add done_btn;
+    vbox#add ~expand:true clock;
+    vbox#add ~expand:true ptask;
+    vbox#add ~expand:true done_btn;
     main_frame#set (vbox :> t);
 
     (* Update the time every second *)
@@ -503,7 +503,7 @@ end = struct
           if !display_done_task || not ptask#is_done then
             let task = new label  ptask#short_summary in
             (* TODO Add scroller, improve summary *)
-            to_add#add task
+            to_add#add ~expand:true task
         );
       main_frame#set to_add;
     in
@@ -511,17 +511,17 @@ end = struct
       (Lwt_engine.on_timer Param.log_tick true
          (fun _ -> list_task ()))
     in
-    vbox#add main_frame;
+    vbox#add ~expand:true main_frame;
 
     (* Add buttons, in a flat box *)
     let hbox = new hbox in
     let pomodoro_btn = new button "Pomodoro" in
     let toggle_done_btn = new button "Toggle done" in
     let exit_btn = new button "Exit" in
-    hbox#add pomodoro_btn;
-    hbox#add toggle_done_btn;
-    hbox#add exit_btn;
-    vbox#add hbox;
+    hbox#add ~expand:true pomodoro_btn;
+    hbox#add ~expand:true toggle_done_btn;
+    hbox#add ~expand:true exit_btn;
+    vbox#add ~expand:false hbox;
 
     (* Go to pomodoro view *)
     pomodoro_btn#on_click (fun () ->
