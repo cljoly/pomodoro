@@ -67,7 +67,7 @@ let task_timer ~ptasks (main_frame:frame) () =
   vbox#add ~expand:true done_btn;
   main_frame#set (vbox :> t);
 
-  (* Update the time every second *)
+  (* Update the time on every tick *)
   (Lwt_engine.on_timer Param.tick true
      (fun _ ->
         (* Make sure timer is in a consistent state *)
@@ -126,7 +126,7 @@ let listing ~ptasks () =
       task_timer ~ptasks main_frame ();
     );
 
-  (* Show don task or not *)
+  (* Show done task or not *)
   toggle_done_btn#on_click (fun () ->
       display_done_task := not !display_done_task;
       list_task ());
