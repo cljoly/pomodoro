@@ -39,8 +39,43 @@ open Core.Std;;
 
 open Lwt;;
 open LTerm_widget;;
+open LTerm_geom;;
 
 (* A view with both task and pomodoro timers *)
+
+(* Scrollable list of tasks *)
+class scrollable_task_list ~ptasks (scroll : scrollable) =
+  let log () = !ptasks.Log_f.log in
+  object(s)
+  inherit t "task_list" as super
+
+  initializer scroll#set_range (List.length (log ()))
+
+  method! can_focus = false
+
+  method! draw ctx focused =
+    let log = log () in
+    let offset = scroll#offset in
+    let { rows ; _ } = LTerm_draw.size ctx in
+    let draw_nth_task ~n =
+      (* Should not be out of range since offset is set to length of task list *)
+      List.nth_exn log (n+offset)
+      |> fun task -> task#short_summary
+      |> LTerm_draw.draw_string ctx n 0
+    in
+    for row=0 to rows-1 do
+      draw_nth_task ~n:row
+    done
+end;;
+
+let  add_scroll_task_list ~ptasks (box : box) =
+  let adj = new scrollable in
+  let scroll = new vscrollbar adj in
+  let task_list = new scrollable_task_list ~ptasks adj in
+  box#add ~expand:true task_list;
+  box#add ~expand:false scroll;
+  (task_list, scroll, adj)
+;;
 
 let task_timer ~ptasks (main_frame:frame) () =
   let current_task ~default f =
