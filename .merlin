@@ -1,5 +1,5 @@
 PKG core core lwt lambda-term
 
-S *
+S src/*
 
-B _build/
+B _build/src/

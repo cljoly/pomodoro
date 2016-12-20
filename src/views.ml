@@ -76,6 +76,7 @@ let  add_scroll_task_list ~ptasks (box : box) =
   let task_list = new scrollable_task_list ~ptasks adj in
   box#add ~expand:true task_list;
   box#add ~expand:false scroll;
+  adj#on_offset_change (fun _ -> scroll#queue_draw);
   (task_list, scroll, adj)
 ;;
 
@@ -122,25 +123,15 @@ let task_timer ~ptasks (main_frame:frame) () =
     (fun () -> current_task ~default:() (fun t -> t#mark_done));
 ;;
 
-(* A view listing tasks *)
-let listing ~ptasks () =
-  let waiter, wakener = wait () in
-
-  let main = new vbox in
-
-  let display_done_task = ref false in
-
-  let ( scroll, _, adj) = add_scroll_task_list ~ptasks main in
-  adj#on_offset_change (fun _ -> scroll#queue_draw);
-
-  (* Add buttons, in a flat box *)
+(* Add buttons, in an horizontal box *)
+let add_bottom_btn ~(main:vbox) ~(adj:scrollable) ~wakener display_done_task =
   let hbox = new hbox in
   (* Scroll down *)
   let down_btn = new button "Down" in
   down_btn#on_click (fun () -> adj#set_offset (adj#offset+1););
   (* Scroll up *)
   let up_btn = new button "Up" in
-  up_btn#on_click (fun () -> eprintf "up"; adj#set_offset (adj#offset-1););
+  up_btn#on_click (fun () -> adj#set_offset (adj#offset-1););
   (* Show done task or not *)
   let toggle_done_btn = new button "Toggle done" in
   toggle_done_btn#on_click (fun () ->
@@ -153,7 +144,16 @@ let listing ~ptasks () =
   hbox#add ~expand:true toggle_done_btn;
   hbox#add ~expand:true exit_btn;
   main#add ~expand:false hbox;
+;;
 
+(* A view listing tasks *)
+let listing ~ptasks () =
+  let waiter, wakener = wait () in
+  let main = new vbox in
+  let display_done_task = ref false in
+
+  let ( _, _, adj) = add_scroll_task_list ~ptasks main in
+  add_bottom_btn ~main ~adj ~wakener display_done_task;
 
   (* Run in the standard terminal *)
   Lazy.force LTerm.stdout >>= fun term ->
