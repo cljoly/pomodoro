@@ -46,14 +46,14 @@ open LTerm_geom;;
 (* Scrollable list of tasks *)
 class scrollable_task_list ~ptasks (scroll : scrollable) =
   let log () = !ptasks.Log_f.log in
-  object(s)
-  inherit t "task_list" as super
+  object
+  inherit t "task_list"
 
   initializer scroll#set_range (List.length (log ()))
 
   method! can_focus = false
 
-  method! draw ctx focused =
+  method! draw ctx _ =
     let log = log () in
     let offset = scroll#offset in
     let { rows ; _ } = LTerm_draw.size ctx in
@@ -70,6 +70,7 @@ class scrollable_task_list ~ptasks (scroll : scrollable) =
     done
 end;;
 
+(* Place scrollable task list *)
 let  add_scroll_task_list ~ptasks (box : box) =
   let adj = new scrollable in
   let scroll = new vscrollbar adj in
@@ -80,6 +81,7 @@ let  add_scroll_task_list ~ptasks (box : box) =
   (task_list, scroll, adj)
 ;;
 
+(* Place pomodoro timer *)
 let add_pomodoro_timer ~ptasks (box:box) =
   let current_task ~default f =
     Tasks.get_pending !ptasks.Log_f.log
@@ -144,8 +146,8 @@ let add_bottom_btn ~(main:vbox) ~(adj:scrollable) ~wakener display_done_task =
   main#add ~expand:false hbox;
 ;;
 
-(* A view listing tasks *)
-let listing ~ptasks () =
+(* Main view *)
+let mainv ~ptasks () =
   let waiter, wakener = wait () in
   let main = new vbox in
   let display_done_task = ref false in
@@ -154,7 +156,6 @@ let listing ~ptasks () =
   let ( _, _, adj) = add_scroll_task_list ~ptasks main in
   add_bottom_btn ~main ~adj ~wakener display_done_task;
 
-  (* Run in the standard terminal *)
   Lazy.force LTerm.stdout >>= fun term ->
   LTerm.enable_mouse term >>= fun () ->
     Lwt.finalize

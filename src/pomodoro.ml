@@ -50,5 +50,5 @@ let () =
         ptasks := Log_f.reread_log !ptasks))
   |> ignore;
 
-  Lwt_main.run (Views.listing ~ptasks ())
+  Lwt_main.run (Views.mainv ~ptasks ())
 ;;

@@ -39,5 +39,6 @@ open Core.Std;;
 
 open LTerm_widget;;
 
-val listing : ptasks:Log_f.read_log ref -> unit -> unit Lwt.t
+(* Main view *)
+val mainv : ptasks:Log_f.read_log ref -> unit -> unit Lwt.t
 
