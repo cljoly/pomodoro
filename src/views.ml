@@ -47,29 +47,29 @@ open LTerm_geom;;
 class scrollable_task_list ~ptasks (scroll : scrollable) display_done_task =
   let log () = !ptasks.Log_f.log in
   object
-  inherit t "task_list"
+    inherit t "task_list"
 
-  initializer scroll#set_range (List.length (log ()))
+    initializer scroll#set_range (List.length (log ()))
 
-  method! can_focus = false
+    method! can_focus = false
 
-  method! draw ctx _ =
-    let log = log () in
-    let offset = scroll#offset in
-    let { rows ; _ } = LTerm_draw.size ctx in
-    let draw_nth_task ~n =
-      let open Option.Monad_infix in
-      (* May be out of range when we are on the last line *)
-      (List.nth log (n+offset) >>= fun task ->
-       Option.some_if (!display_done_task || not task#is_done) task)
-      |> Option.iter ~f:(fun task ->
-          task#short_summary
-          |> LTerm_draw.draw_string ctx n 0)
-    in
-    for row=0 to rows-1 do
-      draw_nth_task ~n:row
-    done
-end;;
+    method! draw ctx _ =
+      let log = log () in
+      let offset = scroll#offset in
+      let { rows ; _ } = LTerm_draw.size ctx in
+      let draw_nth_task ~n =
+        let open Option.Monad_infix in
+        (* May be out of range when we are on the last line *)
+        (List.nth log (n+offset) >>= fun task ->
+         Option.some_if (!display_done_task || not task#is_done) task)
+        |> Option.iter ~f:(fun task ->
+            task#short_summary
+            |> LTerm_draw.draw_string ctx n 0)
+      in
+      for row=0 to rows-1 do
+        draw_nth_task ~n:row
+      done
+  end;;
 
 (* Place scrollable task list *)
 let  add_scroll_task_list ~ptasks (box : box) display_done_task =
@@ -159,7 +159,7 @@ let mainv ~ptasks () =
 
   Lazy.force LTerm.stdout >>= fun term ->
   LTerm.enable_mouse term >>= fun () ->
-    Lwt.finalize
+  Lwt.finalize
     (fun () -> run term main waiter)
     (fun () -> LTerm.disable_mouse term )
 ;;
