@@ -59,8 +59,10 @@ class scrollable_task_list ~ptasks (scroll : scrollable) =
     let { rows ; _ } = LTerm_draw.size ctx in
     let draw_nth_task ~n =
       (* Should not be out of range since offset is set to length of task list *)
-      List.nth_exn log (n+offset)
-      |> fun task -> task#short_summary
+      List.nth log (n+offset)
+      |> (function
+        | Some task -> task#short_summary
+        | None -> "" (* Out of range, print blank line *))
       |> LTerm_draw.draw_string ctx n 0
     in
     for row=0 to rows-1 do
@@ -124,54 +126,40 @@ let task_timer ~ptasks (main_frame:frame) () =
 let listing ~ptasks () =
   let waiter, wakener = wait () in
 
-  let vbox = new vbox in
-  let main_frame = new frame in
+  let main = new vbox in
 
   let display_done_task = ref false in
 
-  let list_task () =
-    let to_add = new vbox in
-    List.iter !ptasks.Log_f.log ~f:(fun ptask ->
-        if !display_done_task || not ptask#is_done then
-          let task = new label  ptask#short_summary in
-          (* TODO Add scroller, improve summary *)
-          to_add#add ~expand:true task
-      );
-    main_frame#set to_add;
-  in
-  let event_task_list =
-    (Lwt_engine.on_timer Param.log_tick true
-       (fun _ -> list_task ()))
-  in
-  vbox#add ~expand:true main_frame;
+  let ( scroll, _, adj) = add_scroll_task_list ~ptasks main in
+  adj#on_offset_change (fun _ -> scroll#queue_draw);
 
   (* Add buttons, in a flat box *)
   let hbox = new hbox in
-  let pomodoro_btn = new button "Pomodoro" in
+  (* Scroll down *)
+  let down_btn = new button "Down" in
+  down_btn#on_click (fun () -> adj#set_offset (adj#offset+1););
+  (* Scroll up *)
+  let up_btn = new button "Up" in
+  up_btn#on_click (fun () -> eprintf "up"; adj#set_offset (adj#offset-1););
+  (* Show done task or not *)
   let toggle_done_btn = new button "Toggle done" in
+  toggle_done_btn#on_click (fun () ->
+      display_done_task := not !display_done_task;);
   let exit_btn = new button "Exit" in
-  hbox#add ~expand:true pomodoro_btn;
+  exit_btn#on_click (fun () -> wakeup wakener ());
+
+  hbox#add ~expand:true down_btn;
+  hbox#add ~expand:true up_btn;
   hbox#add ~expand:true toggle_done_btn;
   hbox#add ~expand:true exit_btn;
-  vbox#add ~expand:false hbox;
+  main#add ~expand:false hbox;
 
-  (* Go to pomodoro view *)
-  pomodoro_btn#on_click (fun () ->
-      Lwt_engine.stop_event event_task_list;
-      task_timer ~ptasks main_frame ();
-    );
-
-  (* Show done task or not *)
-  toggle_done_btn#on_click (fun () ->
-      display_done_task := not !display_done_task;
-      list_task ());
-
-  (* Quit when the exit button is clicked *)
-  exit_btn#on_click (wakeup wakener);
 
   (* Run in the standard terminal *)
-  Lazy.force LTerm.stdout
-  >>= fun term ->
-  run term vbox waiter
+  Lazy.force LTerm.stdout >>= fun term ->
+  LTerm.enable_mouse term >>= fun () ->
+    Lwt.finalize
+    (fun () -> run term main waiter)
+    (fun () -> LTerm.disable_mouse term )
 ;;
 
