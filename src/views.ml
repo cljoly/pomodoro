@@ -80,7 +80,7 @@ let  add_scroll_task_list ~ptasks (box : box) =
   (task_list, scroll, adj)
 ;;
 
-let task_timer ~ptasks (main_frame:frame) () =
+let add_pomodoro_timer ~ptasks (box:box) =
   let current_task ~default f =
     Tasks.get_pending !ptasks.Log_f.log
     |> Option.value_map ~f ~default
@@ -103,7 +103,7 @@ let task_timer ~ptasks (main_frame:frame) () =
   vbox#add ~expand:true clock;
   vbox#add ~expand:true ptask;
   vbox#add ~expand:true done_btn;
-  main_frame#set (vbox :> t);
+  box#add ~expand:false vbox;
 
   (* Update the time on every tick *)
   (Lwt_engine.on_timer Param.tick true
@@ -113,8 +113,6 @@ let task_timer ~ptasks (main_frame:frame) () =
         (* Update display *)
         clock#set_text (remaining_time ());
         ptask#set_text (task_summary ());
-        (* XXX Quite heavy *)
-        main_frame#set (vbox :> t);
      ))
   |> ignore;
 
@@ -152,6 +150,7 @@ let listing ~ptasks () =
   let main = new vbox in
   let display_done_task = ref false in
 
+  add_pomodoro_timer ~ptasks main;
   let ( _, _, adj) = add_scroll_task_list ~ptasks main in
   add_bottom_btn ~main ~adj ~wakener display_done_task;
 

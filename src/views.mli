@@ -39,6 +39,5 @@ open Core.Std;;
 
 open LTerm_widget;;
 
-val task_timer : ptasks:Log_f.read_log ref -> frame -> unit -> unit
 val listing : ptasks:Log_f.read_log ref -> unit -> unit Lwt.t
 
