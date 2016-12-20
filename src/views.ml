@@ -44,7 +44,7 @@ open LTerm_geom;;
 (* A view with both task and pomodoro timers *)
 
 (* Scrollable list of tasks *)
-class scrollable_task_list ~ptasks (scroll : scrollable) =
+class scrollable_task_list ~ptasks (scroll : scrollable) display_done_task =
   let log () = !ptasks.Log_f.log in
   object
   inherit t "task_list"
@@ -58,12 +58,13 @@ class scrollable_task_list ~ptasks (scroll : scrollable) =
     let offset = scroll#offset in
     let { rows ; _ } = LTerm_draw.size ctx in
     let draw_nth_task ~n =
-      (* Should not be out of range since offset is set to length of task list *)
-      List.nth log (n+offset)
-      |> (function
-        | Some task -> task#short_summary
-        | None -> "" (* Out of range, print blank line *))
-      |> LTerm_draw.draw_string ctx n 0
+      let open Option.Monad_infix in
+      (* May be out of range when we are on the last line *)
+      (List.nth log (n+offset) >>= fun task ->
+       Option.some_if (!display_done_task || not task#is_done) task)
+      |> Option.iter ~f:(fun task ->
+          task#short_summary
+          |> LTerm_draw.draw_string ctx n 0)
     in
     for row=0 to rows-1 do
       draw_nth_task ~n:row
@@ -71,10 +72,10 @@ class scrollable_task_list ~ptasks (scroll : scrollable) =
 end;;
 
 (* Place scrollable task list *)
-let  add_scroll_task_list ~ptasks (box : box) =
+let  add_scroll_task_list ~ptasks (box : box) display_done_task =
   let adj = new scrollable in
   let scroll = new vscrollbar adj in
-  let task_list = new scrollable_task_list ~ptasks adj in
+  let task_list = new scrollable_task_list ~ptasks adj display_done_task in
   box#add ~expand:true task_list;
   box#add ~expand:false scroll;
   adj#on_offset_change (fun _ -> scroll#queue_draw);
@@ -153,7 +154,7 @@ let mainv ~ptasks () =
   let display_done_task = ref false in
 
   add_pomodoro_timer ~ptasks main;
-  let ( _, _, adj) = add_scroll_task_list ~ptasks main in
+  let ( _, _, adj) = add_scroll_task_list ~ptasks main display_done_task in
   add_bottom_btn ~main ~adj ~wakener display_done_task;
 
   Lazy.force LTerm.stdout >>= fun term ->
