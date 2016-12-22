@@ -165,7 +165,9 @@ let mainv ~ptasks () =
   let display_done_task = ref false in
 
   add_pomodoro_timer ~ptasks main;
+  main#add ~expand:false (new hline);
   let ( _, _, adj) = add_scroll_task_list ~ptasks main display_done_task in
+  main#add ~expand:false (new hline);
   add_bottom_btn ~main ~adj ~wakener display_done_task;
 
   Lazy.force LTerm.stdout >>= fun term ->
