@@ -54,21 +54,32 @@ class scrollable_task_list ~ptasks (scroll : scrollable) display_done_task =
     method! can_focus = false
 
     method! draw ctx _ =
-      let log = log () in
-      let offset = scroll#offset in
-      let { rows ; _ } = LTerm_draw.size ctx in
-      let draw_nth_task ~n =
-        let open Option.Monad_infix in
-        (* May be out of range when we are on the last line *)
-        (List.nth log (n+offset) >>= fun task ->
-         Option.some_if (!display_done_task || not task#is_done) task)
-        |> Option.iter ~f:(fun task ->
-            task#short_summary
-            |> LTerm_draw.draw_string ctx n 0)
+      (* Return elements of list [l] between [top] (of the screen) and (top+row)
+       * (corresponding to the last line of the screen) *)
+      let select_task top l =
+        let { rows ; _ } = LTerm_draw.size ctx in
+        let ll = List.length l in
+        (* Reset offset to last line and redraw *)
+        let reset_offset_redraw () =
+          scroll#set_offset ~trigger_callback:true (ll-1);
+          List.last l |> Option.to_list
+        in
+        let top = Int.max 0 top in
+        let bottom = Int.min (top + rows) ll in
+        match List.slice l top bottom with
+        (* Appends when we are at the end of the list l *)
+        | exception (Invalid_argument _) -> reset_offset_redraw ()
+        | [] ->  reset_offset_redraw ()
+        (* Not at the end *)
+        | l -> l
       in
-      for row=0 to rows-1 do
-        draw_nth_task ~n:row
-      done
+      let offset = scroll#offset in
+      log ()
+      |> List.filter
+        ~f:(fun task -> (!display_done_task || not task#is_done))
+      |> select_task offset
+      |> List.iteri
+        ~f:(fun i task -> LTerm_draw.draw_string ctx i 0 task#short_summary)
   end;;
 
 (* Place scrollable task list *)
@@ -129,10 +140,10 @@ let add_bottom_btn ~(main:vbox) ~(adj:scrollable) ~wakener display_done_task =
   let hbox = new hbox in
   (* Scroll down *)
   let down_btn = new button "Down" in
-  down_btn#on_click (fun () -> adj#set_offset (adj#offset+1););
+  down_btn#on_click (fun () -> adj#set_offset (adj#offset+1));
   (* Scroll up *)
   let up_btn = new button "Up" in
-  up_btn#on_click (fun () -> adj#set_offset (adj#offset-1););
+  up_btn#on_click (fun () -> adj#set_offset (adj#offset-1));
   (* Show done task or not *)
   let toggle_done_btn = new button "Toggle done" in
   toggle_done_btn#on_click (fun () ->
