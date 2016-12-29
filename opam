@@ -1,0 +1,24 @@
+opam-version: "1.2"
+name: "pomodoro"
+version: "0.3.1"
+maintainer: "Leo <leo@wzukw.eu.org>"
+authors: "Leo <leo@wzukw.eu.org>"
+homepage: "http://www.pomodoro.ml"
+bug-reports: "http://www.pomodoro.ml/bug"
+license: "CeCILL-B"
+dev-repo: "git@gitlab.com:WzukW/pomodoro.git"
+build: [
+  ["./configure" "--disable-tests" "--prefix=%{prefix}%"]
+  [make]
+]
+install: [make "install"]
+remove: ["ocamlfind" "remove" "oclaunch"]
+depends: [
+  "ocamlbuild" { build }
+  "lambda-term" { build & > "1.10.1" }
+  "lwt" { build }
+  "base-threads" { build }
+  "core" {  build & >= "112.35.00"}
+  "ocamlfind" { build }
+]
+available: [ocaml-version >= "4.03.0"]
