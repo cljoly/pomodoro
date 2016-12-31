@@ -31,8 +31,6 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-B license and that you accept its terms.
 
-Inspired by example of lambda-term library, (c) 2011, Jeremie Dimino <jeremie@dimino.org>
-
 *)
 
 open Core.Std;;
@@ -121,14 +119,15 @@ let reread_log r_log =
   let fname = r_log.fname in (* Name is common to both logs *)
   let old_log = r_log.log in
   let new_log = (read_log fname).log in
-  let log =
+  let log = (* Merge current state and log file *)
     List.map new_log
       ~f:(fun new_task ->
-          List.find_map old_log ~f:(fun old_task ->
-              if new_task#id = old_task#id
-              then Some (old_task#update_with new_task)
-              else None
-            )
+          List.find_map old_log
+            ~f:(fun old_task ->
+                if new_task#id = old_task#id
+                then Some (old_task#update_with new_task)
+                else None
+              )
           |> Option.value ~default:new_task
         )
     |> (* Disable timer from tasks other than the first one *)
