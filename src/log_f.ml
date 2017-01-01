@@ -53,7 +53,7 @@ type task_sexp = {
   description : string;
   done_at : string sexp_option; (* date and time iso8601 like 2016-09-10T14:57:25 *)
   done_with : int sexp_option; (* Number of pomodoro used *)
-  interuption : int sexp_option; (* Track interuptions *)
+  interruption : int sexp_option; (* Track interruptions *)
   (* Write down an estimation of the number of needed pomodoro *)
   estimation : int sexp_option;
 } [@@deriving sexp]

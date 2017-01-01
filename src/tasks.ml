@@ -198,28 +198,41 @@ class ptask
 
     (* Returns a summary of the task, short or with more details *)
     method private summary ~long =
-      let short_summary = sprintf "%s: %s"
+      let short_summary = sprintf "%s: \"%s\""
           (name#print_both String.of_string)
           (description#print_both String.of_string)
       in
       let done_at =
         Option.map done_at#get ~f:(fun _ ->
-            "Done at" ^
             (done_at#print_both
               (function
-                | None -> "None"
-                | Some date -> date)
+                | None -> "(no done date)"
+                | Some date -> sprintf "(done at %s)" date)
             ))
       in
-      let with_n =
-        "With " ^ (number_of_pomodoro#print_both Int.to_string) ^ " pomodoro"
+      let nb =
+        sprintf "%s pomodoro" (number_of_pomodoro#print_both Int.to_string)
+      in
+      let interruption =
+        None (* TODO Implement this *)
+      in
+      let estimation =
+        None (* TODO Implement this *)
+      in
+      let append_pipe_if_some =
+        Option.map ~f:(fun a -> a ^ " |")
       in
       (* Display only what is needed *)
-      Option.[ Some short_summary
+      Option.[
+        some_if long "|"
+      ; Some short_summary
       ; bind done_at (some_if long)
-      ; some_if long with_n
+      ; some_if long "with"
+      ; (some_if long nb |> append_pipe_if_some)
+      ; (some_if long interruption |> join |> append_pipe_if_some)
+      ; (some_if long estimation |> join |> append_pipe_if_some) (* TODO Remove join once implemented *)
       ] |> List.filter_map ~f:(fun a -> a)
-      |> String.concat ~sep:"\n"
+      |> String.concat ~sep:" "
     method short_summary = s#summary ~long:false
     method long_summary = s#summary ~long:true
 

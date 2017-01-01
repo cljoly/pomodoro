@@ -79,7 +79,7 @@ class scrollable_task_list ~ptasks (scroll : scrollable) display_done_task =
         ~f:(fun task -> (!display_done_task || not task#is_done))
       |> select_task offset
       |> List.iteri
-        ~f:(fun i task -> LTerm_draw.draw_string ctx i 0 task#short_summary)
+        ~f:(fun i task -> LTerm_draw.draw_string ctx i 0 task#long_summary)
   end;;
 
 (* Place scrollable task list *)
@@ -107,7 +107,7 @@ let add_pomodoro_timer ~ptasks (box:box) =
          String.concat [ (Tasks.time_remaining ~timer) ; "\n" ; timer#name ])
   in
   let task_summary () =
-    current_task ~default:"" (fun ptask -> ptask#long_summary)
+    current_task ~default:"" (fun ptask -> ptask#short_summary)
   in
 
   let vbox = new vbox in
