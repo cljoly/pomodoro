@@ -67,6 +67,14 @@ class ['a] avl read_value = object(s)
   (* Gives both values if they differs *)
   method both =
     Option.some_if (log <> actual) (log, actual)
+
+  (* Returning string with all relevant values *)
+  method print_both f =
+    (* f converts to string *)
+    match s#both with
+    | None -> f s#get
+    | Some (log_value, actual_value) ->
+      sprintf "%s (log: %s)" (f actual_value) (f log_value)
 end
 
 (* Create a timer of duration (in minute). The on_exit function is called the
@@ -190,30 +198,28 @@ class ptask
 
     (* Returns a summary of the task, short or with more details *)
     method private summary ~long =
-      (* f converts to string *)
-      let print_both avl ~f = match avl#both with
-        | None -> f avl#get
-        | Some (log_value, actual_value) ->
-          sprintf "%s (log: %s)" (f actual_value) (f log_value)
-      in
-      (* Identity *) let id = fun a -> a in
       let short_summary = sprintf "%s: %s"
-          (print_both ~f:id name)
-          (print_both ~f:id description)
+          (name#print_both String.of_string)
+          (description#print_both String.of_string)
       in
-      if long
-      then
-        (* Display only what is needed *)
-        [ Some short_summary
-        ; Option.map done_at#get
-            ~f:(fun _ -> "Done at" ^ (print_both
-                                        ~f:(function None -> "None" | Some date -> date) done_at))
-        ; "With " ^ (print_both number_of_pomodoro ~f:Int.to_string) ^ " pomodoro"
-          |> Option.some
-        ] |> List.filter_map ~f:id
-        |> String.concat ~sep:"\n"
-      else short_summary
-
+      let done_at =
+        Option.map done_at#get ~f:(fun _ ->
+            "Done at" ^
+            (done_at#print_both
+              (function
+                | None -> "None"
+                | Some date -> date)
+            ))
+      in
+      let with_n =
+        "With " ^ (number_of_pomodoro#print_both Int.to_string) ^ " pomodoro"
+      in
+      (* Display only what is needed *)
+      Option.[ Some short_summary
+      ; bind done_at (some_if long)
+      ; some_if long with_n
+      ] |> List.filter_map ~f:(fun a -> a)
+      |> String.concat ~sep:"\n"
     method short_summary = s#summary ~long:false
     method long_summary = s#summary ~long:true
 

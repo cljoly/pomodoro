@@ -114,10 +114,6 @@ let add_pomodoro_timer ~ptasks (box:box) =
   let clock = new label (remaining_time ()) in
   let ptask = new label "" in
   let done_btn = new button "Done" in
-  vbox#add ~expand:true clock;
-  vbox#add ~expand:true ptask;
-  vbox#add ~expand:true done_btn;
-  box#add ~expand:false vbox;
 
   (* Update the time on every tick *)
   (Lwt_engine.on_timer Param.tick true
@@ -133,6 +129,11 @@ let add_pomodoro_timer ~ptasks (box:box) =
   (* Mark task as finished when done button is pressed *)
   done_btn#on_click
     (fun () -> current_task ~default:() (fun t -> t#mark_done));
+
+  vbox#add ~expand:true clock;
+  vbox#add ~expand:true ptask;
+  vbox#add ~expand:true done_btn;
+  box#add ~expand:false vbox;
 ;;
 
 (* Add buttons, in an horizontal box *)

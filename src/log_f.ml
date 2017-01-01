@@ -114,8 +114,16 @@ let read_log filename =
 
 (* Update entries, dropping all tasks in old log file if they are not in the new
  * one and adding those in the new log file, even if they were not in the new
-   one. Makes sure we stop timers of task going deeper in the list *)
+ * one. Makes sure we stop timers of task going deeper in the list *)
 let reread_log r_log =
+  (* Disable timer from tasks other than the first one *)
+  let disable_all_but_first =
+    function
+    | [] -> []
+    | (_ :: interrupted_tasks) as log ->
+      List.iter ~f:(fun timer -> timer#interrupt) interrupted_tasks;
+      log
+  in
   let fname = r_log.fname in (* Name is common to both logs *)
   let old_log = r_log.log in
   let new_log = (read_log fname).log in
@@ -130,12 +138,7 @@ let reread_log r_log =
               )
           |> Option.value ~default:new_task
         )
-    |> (* Disable timer from tasks other than the first one *)
-    (function
-      | [] -> []
-      | (_ :: interrupted_tasks) as log ->
-        List.iter ~f:(fun t -> t#interrupt) interrupted_tasks; log
-    )
+    |> disable_all_but_first
   in
   { fname ; log }
 ;;

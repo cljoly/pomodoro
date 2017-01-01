@@ -48,6 +48,7 @@ class ['a] avl :
     val mutable actual : 'a
     val log : 'a
     method both : ('a * 'a) option
+    method print_both : ('a -> string) -> string
     method get : 'a
     method private get_actual : 'a
     method get_log : 'a
