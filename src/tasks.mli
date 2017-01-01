@@ -83,36 +83,30 @@ class timer :
   end
 class ptask :
   ?num:int ->
-  string ->
-  string ->
+  name:string ->
+  description:string ->
+  ?done_at:string ->
+  ?number_of_pomodoro:int ->
+  ?estimation:int ->
+  ?interruption:int ->
   of_timer list ->
   (of_timer -> timer) ->
-  ?done_at:string ->
-  int ->
   object ('a)
-    val mutable current_timer : timer
-    val cycle : of_timer list avl
-    val cycle_length : int
-    val description : string avl
-    val done_at : string option avl
-    val name : string avl
-    val num : int option avl
-    val number_of_pomodoro : int avl
-    val mutable position : int
-    val status : status avl
     method current_timer : timer
-    method description : string
-    method done_at : string option
+    method description : string avl
+    method done_at : string option avl
+    method estimation : int option avl
+    method interruption : int option avl
     method id : int
     method interrupt : unit
     method is_done : bool
     method long_summary : string
     method mark_done : unit
-    method name : string
-    method num : int option
-    method number_of_pomodoro : int
+    method name : string avl
+    method num : int option avl
+    method number_of_pomodoro : int option avl
     method short_summary : string
-    method status : status
+    method status : status avl
     method private summary : long:bool -> string
     method update_with : 'a -> 'a
   end

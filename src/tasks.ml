@@ -145,41 +145,50 @@ let empty_timer () =
  * sets the number and order of timers *)
 class ptask
     ?num (* Position in log file, useful to order tasks *)
-    name
-    description
+    ~name
+    ~description
+    ?done_at
+    ?number_of_pomodoro
+    ?estimation
+    ?interruption
     cycle
     (simple_timer:(of_timer -> timer))
-    ?done_at
-    number_of_pomodoro
   =
   let cycle_length = List.length cycle in
   object(s:'s)
     val name : string avl = new avl name
     val description : string avl = new avl description
-    method name = name#get
-    method description = description#get
+    method name = name
+    method description = description
     (* Way to identify a task uniquely, XXX based on its name for now *)
-    method id = String.hash s#name
+    method id = String.hash s#name#get
 
     val status =
       new avl (match done_at with Some _ -> Done | None -> Active)
     val done_at = new avl done_at
-    method done_at = done_at#get
+    method done_at = done_at
     method mark_done = status#set Done
-    method status = status#get
+    method status = status
     method is_done =
       status#get = Done
 
     val num : int option avl = new avl num
-    method num = num#get
+    method num = num
 
     val cycle : of_timer list avl = new avl cycle
     val cycle_length = cycle_length
     (* Position in the cycle, lead to problem if cycle is empty *)
     val mutable position = -1
     val mutable current_timer = empty_timer ()
-    val number_of_pomodoro = new avl number_of_pomodoro
-    method number_of_pomodoro = number_of_pomodoro#get
+    val number_of_pomodoro : int option avl = new avl number_of_pomodoro
+
+    val interruption : int option avl = new avl interruption
+    method interruption = interruption
+
+    val estimation : int option avl = new avl estimation
+    method estimation = estimation
+
+    method number_of_pomodoro = number_of_pomodoro
     (* Return current timer. Cycles through timers, as one finishes *)
     method current_timer =
       if
@@ -187,7 +196,8 @@ class ptask
         && current_timer#is_finished
       then begin
         if current_timer#of_type = Pomodoro then
-          number_of_pomodoro#set (number_of_pomodoro#get + 1);
+          number_of_pomodoro#set (Option.map number_of_pomodoro#get
+            ~f:(fun nop -> nop + 1));
         (* Circle through positions *)
         position <- (position + 1) mod cycle_length;
         current_timer <- simple_timer (List.nth_exn cycle#get position);
@@ -211,7 +221,8 @@ class ptask
             ))
       in
       let nb =
-        sprintf "%s pomodoro" (number_of_pomodoro#print_both Int.to_string)
+        sprintf "%s pomodoro" (number_of_pomodoro#print_both
+          (Option.value_map ~f:Int.to_string ~default:""))
       in
       let interruption =
         None (* TODO Implement this *)
@@ -246,20 +257,22 @@ class ptask
         avl
       in
       let clever_status_update =
-        match status#get, another#status with
-        | Done, Active -> status#update_log another#status
+        match status#get, another#status#get with
+        | Done, Active -> status#update_log another#status#get
         | Active, Done | Done, Done | Active, Active ->
           (* Make sure current state is the log one *)
-          status#update_log another#status |> update_actual
+          status#update_log another#status#get |> update_actual
       in
       assert (another#id = s#id);
       {<
         status = clever_status_update;
-        name = name#update_log another#name |> update_actual;
-        description = description#update_log another#description |> update_actual;
-        num = num#update_log another#num |> update_actual;
-        number_of_pomodoro = number_of_pomodoro#update_log another#number_of_pomodoro;
-        done_at = done_at#update_log another#done_at;
+        name = name#update_log another#name#get |> update_actual;
+        description = description#update_log another#description#get |> update_actual;
+        num = num#update_log another#num#get |> update_actual;
+        number_of_pomodoro = number_of_pomodoro#update_log another#number_of_pomodoro#get;
+        done_at = done_at#update_log another#done_at#get;
+        interruption = interruption#update_log another#interruption#get;
+        estimation = estimation#update_log another#estimation#get;
       >}
   end
 

@@ -18,7 +18,7 @@ depends: [
   "lambda-term" { build & > "1.10.1" }
   "lwt" { build }
   "base-threads" { build }
-  "core" {  build & >= "112.35.00"}
+  "core" { build }
   "ocamlfind" { build }
 ]
 available: [ocaml-version >= "4.03.0"]

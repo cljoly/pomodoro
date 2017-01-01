@@ -53,9 +53,9 @@ type task_sexp = {
   description : string;
   done_at : string sexp_option; (* date and time iso8601 like 2016-09-10T14:57:25 *)
   done_with : int sexp_option; (* Number of pomodoro used *)
-  interruption : int sexp_option; (* Track interruptions *)
   (* Write down an estimation of the number of needed pomodoro *)
   estimation : int sexp_option;
+  interruption : int sexp_option; (* Track interruptions *)
 } [@@deriving sexp]
 type log = {
   settings : settings;
@@ -103,12 +103,14 @@ let read_log filename =
         ~f:(fun task_position (task_sexp:task_sexp) ->
             new Tasks.ptask
               ~num:task_position
-              task_sexp.name
-              task_sexp.description
+              ~name:task_sexp.name
+              ~description:task_sexp.description
+              ?done_at:task_sexp.done_at
+              ?number_of_pomodoro:task_sexp.done_with
+              ?estimation:task_sexp.estimation
+              ?interruption:task_sexp.interruption
               cycle
               simple_timer
-              ?done_at:task_sexp.done_at
-              (Option.value ~default:0 task_sexp.done_with)
           );
   }
 
