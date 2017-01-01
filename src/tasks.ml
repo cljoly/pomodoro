@@ -245,15 +245,21 @@ class ptask
         avl#turn2log;
         avl
       in
+      let clever_status_update =
+        match status#get, another#status with
+        | Done, Active -> status#update_log another#status
+        | Active, Done | Done, Done | Active, Active ->
+          (* Make sure current state is the log one *)
+          status#update_log another#status |> update_actual
+      in
       assert (another#id = s#id);
       {<
+        status = clever_status_update;
         name = name#update_log another#name |> update_actual;
         description = description#update_log another#description |> update_actual;
         num = num#update_log another#num |> update_actual;
         number_of_pomodoro = number_of_pomodoro#update_log another#number_of_pomodoro;
-        (* Updating status, but keeping potentially different date *)
         done_at = done_at#update_log another#done_at;
-        status = status#update_log another#status |> update_actual
       >}
   end
 
