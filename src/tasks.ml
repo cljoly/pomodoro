@@ -196,8 +196,10 @@ class ptask
         && current_timer#is_finished
       then begin
         if current_timer#of_type = Pomodoro then
-          number_of_pomodoro#set (Option.map number_of_pomodoro#get
-            ~f:(fun nop -> nop + 1));
+          number_of_pomodoro#set
+            (Option.value ~default:0 number_of_pomodoro#get
+             |> (fun nop -> nop + 1)
+             |> Option.some);
         (* Circle through positions *)
         position <- (position + 1) mod cycle_length;
         current_timer <- simple_timer (List.nth_exn cycle#get position);
@@ -221,8 +223,8 @@ class ptask
             ))
       in
       let nb =
-        sprintf "%s pomodoro" (number_of_pomodoro#print_both
-          (Option.value_map ~f:Int.to_string ~default:""))
+        sprintf "with %s pomodoro" (number_of_pomodoro#print_both
+          (Option.value_map ~f:Int.to_string ~default:"0"))
       in
       let interruption =
         None (* TODO Implement this *)
@@ -238,7 +240,6 @@ class ptask
         some_if long "|"
       ; Some short_summary
       ; bind done_at (some_if long)
-      ; some_if long "with"
       ; (some_if long nb |> append_pipe_if_some)
       ; (some_if long interruption |> join |> append_pipe_if_some)
       ; (some_if long estimation |> join |> append_pipe_if_some) (* TODO Remove join once implemented *)
