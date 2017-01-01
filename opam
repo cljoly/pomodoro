@@ -19,6 +19,7 @@ depends: [
   "lwt" { build }
   "base-threads" { build }
   "core" { build }
+  "textutils" { build }
   "ocamlfind" { build }
 ]
 available: [ocaml-version >= "4.03.0"]

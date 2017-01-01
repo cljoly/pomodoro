@@ -73,13 +73,34 @@ class scrollable_task_list ~ptasks (scroll : scrollable) display_done_task =
         (* Not at the end *)
         | l -> l
       in
+      (* Return a string creating a table of tasks, which may be too large *)
+      let draw_table_of_task (task_list: Tasks.ptask list) =
+        let open Textutils.Ascii_table in
+        (* String of option *)
+        let soo f = Option.value_map ~default:"" ~f in
+        to_string ~display:Display.column_titles
+          Column.[
+            create "Summary" ~align:Align.Right
+              (fun t -> t#short_summary)
+          ; create "Done" ~align:Align.Center
+              (fun t ->
+                 t#status#print_both (function Tasks.Done -> "X" | Active -> " "))
+          ; create "Done with" ~align:Align.Center
+            (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string))
+          ; create "Interruption" ~align:Align.Center
+            (fun t -> t#interruption#get |> soo Int.to_string)
+          ; create "Estimation" ~align:Align.Center
+            (fun t -> t#estimation#get |> soo Int.to_string)
+          ]
+          task_list
+      in
       let offset = scroll#offset in
       log ()
       |> List.filter
         ~f:(fun task -> (!display_done_task || not task#is_done))
       |> select_task offset
-      |> List.iteri
-        ~f:(fun i task -> LTerm_draw.draw_string ctx i 0 task#long_summary)
+      |> draw_table_of_task
+      |> LTerm_draw.draw_string ctx 0 0
   end;;
 
 (* Place scrollable task list *)
