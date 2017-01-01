@@ -97,7 +97,7 @@ class timer duration of_type ~on_finish name running_meanwhile running_when_done
       let now = T.now () in
       let eleapsed_time = T.diff now start_time in
       let remaining_time = Ts.(duration - eleapsed_time) in
-      if Ts.(compare eleapsed_time duration) < 0
+      if Ts.(eleapsed_time < duration)
       then Some remaining_time (* Time remaining *)
       else begin
         s#call_on_finish_once;
