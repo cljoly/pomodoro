@@ -47,36 +47,6 @@ type of_timer =
     Pomodoro | Short_break | Long_break
 ;;
 
-(* Represents actual states and states read from log file
- * (avl stands for actual_vs_log) *)
-class ['a] avl read_value = object(s)
-  val log : 'a = read_value
-  val mutable actual = read_value
-  method get_log = log
-  method private get_actual = actual
-  (* Shorthand *)
-  method get = s#get_actual
-  (* Update actual value, but keep log as-is, giving a new object if we try to
-   * change it *)
-  method update_log new_log_value = {< log = new_log_value >}
-  method private update_actual updated_value =
-    actual <- updated_value
-  method set = s#update_actual
-  (* Turn the actual state to the log one *)
-  method turn2log = s#update_actual s#get_log
-  (* Gives both values if they differs *)
-  method both =
-    Option.some_if (log <> actual) (log, actual)
-
-  (* Returning string with all relevant values *)
-  method print_both f =
-    (* f converts to string *)
-    match s#both with
-    | None -> f s#get
-    | Some (log_value, actual_value) ->
-      sprintf "%s (log: %s)" (f actual_value) (f log_value)
-end
-
 (* Create a timer of duration (in minute). The on_exit function is called the
  * first time the timer is finished *)
 class timer duration of_type ~on_finish name running_meanwhile running_when_done =
@@ -156,16 +126,16 @@ class ptask
   =
   let cycle_length = List.length cycle in
   object(s:'s)
-    val name : string avl = new avl name
-    val description : string avl = new avl description
+    val name : string Avl.t = new Avl.t name
+    val description : string Avl.t = new Avl.t description
     method name = name
     method description = description
     (* Way to identify a task uniquely, XXX based on its name for now *)
     method id = String.hash s#name#get
 
     val status =
-      new avl (match done_at with Some _ -> Done | None -> Active)
-    val done_at = new avl done_at
+      new Avl.t (match done_at with Some _ -> Done | None -> Active)
+    val done_at = new Avl.t done_at
     method done_at = done_at
     method mark_done =
       done_at#set T.(now () |> to_string |> Some);
@@ -174,24 +144,24 @@ class ptask
     method is_done =
       status#get = Done
 
-    val num : int option avl = new avl num
+    val num : int option Avl.t = new Avl.t num
     method num = num
 
-    val cycle : of_timer list avl = new avl cycle
+    val cycle : of_timer list Avl.t = new Avl.t cycle
     val cycle_length = cycle_length
     (* Position in the cycle, lead to problem if cycle is empty *)
     val mutable position = -1
     val mutable current_timer = empty_timer ()
-    val number_of_pomodoro : int option avl = new avl number_of_pomodoro
+    val number_of_pomodoro : int option Avl.t = new Avl.t number_of_pomodoro
 
-    val interruption : int option avl = new avl interruption
+    val interruption : int option Avl.t = new Avl.t interruption
     method interruption = interruption
     method record_interruption =
       interruption#set
         (Some (Option.value_map ~default:(0+1) ~f:succ interruption#get));
       current_timer#cancel
 
-    val estimation : int option avl = new avl estimation
+    val estimation : int option Avl.t = new Avl.t estimation
     method estimation = estimation
 
     method number_of_pomodoro = number_of_pomodoro

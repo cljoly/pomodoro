@@ -42,21 +42,7 @@ module Ts = Time.Span;;
 
 type status = Active | Done
 type of_timer = Pomodoro | Short_break | Long_break
-class ['a] avl :
-  'a ->
-  object ('b)
-    val mutable actual : 'a
-    val log : 'a
-    method both : ('a * 'a) option
-    method print_both : ('a -> string) -> string
-    method get : 'a
-    method private get_actual : 'a
-    method get_log : 'a
-    method set : 'a -> unit
-    method turn2log : unit
-    method private update_actual : 'a -> unit
-    method update_log : 'a -> 'b
-  end
+
 class timer :
   float ->
   of_timer ->
@@ -93,10 +79,10 @@ class ptask :
   (of_timer -> timer) ->
   object ('a)
     method current_timer : timer
-    method description : string avl
-    method done_at : string option avl
-    method estimation : int option avl
-    method interruption : int option avl
+    method description : string Avl.t
+    method done_at : string option Avl.t
+    method estimation : int option Avl.t
+    method interruption : int option Avl.t
     method id : int
 
     (* XXX Confusing *)
@@ -106,11 +92,11 @@ class ptask :
     method is_done : bool
     method long_summary : string
     method mark_done : unit
-    method name : string avl
-    method num : int option avl
-    method number_of_pomodoro : int option avl
+    method name : string Avl.t
+    method num : int option Avl.t
+    method number_of_pomodoro : int option Avl.t
     method short_summary : string
-    method status : status avl
+    method status : status Avl.t
     method private summary : long:bool -> string
     method update_with : 'a -> 'a
   end
