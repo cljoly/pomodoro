@@ -167,7 +167,9 @@ class ptask
       new avl (match done_at with Some _ -> Done | None -> Active)
     val done_at = new avl done_at
     method done_at = done_at
-    method mark_done = status#set Done
+    method mark_done =
+      done_at#set T.(now () |> to_string |> Some);
+      status#set Done
     method status = status
     method is_done =
       status#get = Done
