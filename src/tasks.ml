@@ -215,36 +215,32 @@ class ptask
           (description#print_both String.of_string)
       in
       let done_at =
-        Option.map done_at#get ~f:(fun _ ->
-            (done_at#print_both
-              (function
-                | None -> "(no done date)"
-                | Some date -> sprintf "(done at %s)" date)
-            ))
+        done_at#print_both (Option.value_map~default:"(no done date)"
+          ~f: (fun date -> sprintf "(done at %s)" date))
       in
       let nb =
         sprintf "with %s pomodoro" (number_of_pomodoro#print_both
           (Option.value_map ~f:Int.to_string ~default:"0"))
       in
       let interruption =
-        None (* TODO Implement this *)
+        sprintf "interrruption: %s"
+          (interruption#print_both
+            (Option.value_map ~default:"0" ~f:Int.to_string))
       in
       let estimation =
-        None (* TODO Implement this *)
-      in
-      let append_pipe_if_some =
-        Option.map ~f:(fun a -> a ^ " |")
+        sprintf "estimation: %s"
+          (estimation#print_both
+            (Option.value_map ~default:"0" ~f:Int.to_string))
       in
       (* Display only what is needed *)
       Option.[
-        some_if long "|"
-      ; Some short_summary
-      ; bind done_at (some_if long)
-      ; (some_if long nb |> append_pipe_if_some)
-      ; (some_if long interruption |> join |> append_pipe_if_some)
-      ; (some_if long estimation |> join |> append_pipe_if_some) (* TODO Remove join once implemented *)
+        Some short_summary
+      ; (some_if long done_at)
+      ; (some_if long nb)
+      ; (some_if long interruption)
+      ; (some_if long estimation)
       ] |> List.filter_map ~f:(fun a -> a)
-      |> String.concat ~sep:" "
+      |> String.concat ~sep:", "
     method short_summary = s#summary ~long:false
     method long_summary = s#summary ~long:true
 

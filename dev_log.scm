@@ -9,10 +9,10 @@
  (tasks(
   ;; (((name "Task name") (description "Task description")
   ;;   (done_at ("2016-09-10T15:42:38")) (done_with (5)))
-   ((name "Task 1") (description "Learn it!") (done_at "2016-09-10T16:06:41") (done_with 5))
+   ((name "Task 1") (description "Learn it!") (done_at "2017-09-10T16:06:41") (done_with 5))
    ((name "Task 2") (description "Some fields are optional") (done_with 3))
-   ((name "Task 3") (description "three"))
-   ((name "Task 4") (description "four"))
+   ((name "Task 3") (description "three") (interruption 42))
+   ((name "Task 4") (description "four") (estimation 23))
    ((name "Task 5") (description "five"))
    ((name "Task 6") (description "Learn it!") (done_at "2016-09-10T16:06:41") (done_with 5))
    ((name "Task 7") (description "Some fields are optional"))

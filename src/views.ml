@@ -128,7 +128,7 @@ let add_pomodoro_timer ~ptasks (box:box) =
          String.concat [ (Tasks.time_remaining ~timer) ; "\n" ; timer#name ])
   in
   let task_summary () =
-    current_task ~default:"" (fun ptask -> ptask#short_summary)
+    current_task ~default:"" (fun ptask -> ptask#long_summary)
   in
 
   let vbox = new vbox in
