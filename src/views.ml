@@ -90,9 +90,9 @@ class scrollable_task_list ~ptasks (scroll : scrollable) display_done_task =
           ; create "at" ~align:Align.Center
             (fun t -> t#done_at#print_both (soo String.to_string))
           ; create "Interruption" ~align:Align.Center
-            (fun t -> t#interruption#get |> soo Int.to_string)
+            (fun t -> t#interruption#print_both (soo Int.to_string))
           ; create "Estimation" ~align:Align.Center
-            (fun t -> t#estimation#get |> soo Int.to_string)
+            (fun t -> t#estimation#print_both (soo Int.to_string))
           ]
           task_list
       in
