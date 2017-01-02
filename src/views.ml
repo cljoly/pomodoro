@@ -85,8 +85,10 @@ class scrollable_task_list ~ptasks (scroll : scrollable) display_done_task =
           ; create "Done" ~align:Align.Center
               (fun t ->
                  t#status#print_both (function Tasks.Done -> "X" | Active -> " "))
-          ; create "Done with" ~align:Align.Center
+          ; create "with" ~align:Align.Center
             (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string))
+          ; create "at" ~align:Align.Center
+            (fun t -> t#done_at#print_both (soo String.to_string))
           ; create "Interruption" ~align:Align.Center
             (fun t -> t#interruption#get |> soo Int.to_string)
           ; create "Estimation" ~align:Align.Center
