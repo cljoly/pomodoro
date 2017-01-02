@@ -35,7 +35,7 @@ knowledge of the CeCILL-B license and that you accept its terms.
 
 open Core.Std;;
 
-class ['a] t read_value = object(s)
+class ['a] t ?(compare=compare) read_value = object(s)
   val log : 'a = read_value
   val mutable actual = read_value
   method get_log = log
@@ -52,7 +52,7 @@ class ['a] t read_value = object(s)
   method turn2log = s#update_actual s#get_log
   (* Gives both values if they differs *)
   method both =
-    Option.some_if (log <> actual) (log, actual)
+    Option.some_if ((compare log actual) <> 0) (log, actual)
 
   (* Returning string with all relevant values *)
   method print_both f =

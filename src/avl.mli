@@ -42,6 +42,7 @@ open Core.Std;;
  * provided as a custom comparator and converter to s-expression,
  * respectively. *)
 class ['a] t :
+  ?compare:('a -> 'a -> int) ->
   'a ->
   object ('b)
     val mutable actual : 'a
