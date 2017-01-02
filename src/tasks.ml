@@ -186,6 +186,10 @@ class ptask
 
     val interruption : int option avl = new avl interruption
     method interruption = interruption
+    method record_interruption =
+      interruption#set
+        (Some (Option.value_map ~default:(0+1) ~f:succ interruption#get));
+      current_timer#cancel
 
     val estimation : int option avl = new avl estimation
     method estimation = estimation

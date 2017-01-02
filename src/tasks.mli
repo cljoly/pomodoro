@@ -98,7 +98,11 @@ class ptask :
     method estimation : int option avl
     method interruption : int option avl
     method id : int
+
+    (* XXX Confusing *)
+    method record_interruption : unit
     method interrupt : unit
+
     method is_done : bool
     method long_summary : string
     method mark_done : unit
