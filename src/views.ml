@@ -78,7 +78,7 @@ class scrollable_task_list ~ptasks (scroll : scrollable) display_done_task =
         let open Textutils.Ascii_table in
         (* String of option *)
         let soo f = Option.value_map ~default:"" ~f in
-        to_string ~display:Display.column_titles
+        to_string_noattr ~bars:`Ascii ~display:Display.column_titles
           Column.[
             create "Summary" ~align:Align.Right
               (fun t -> t#short_summary)
