@@ -124,10 +124,13 @@ let add_pomodoro_timer ~ptasks (box:box) =
   in
   (* Allow to get remainging time for current ptask, if any one is yet active *)
   let remaining_time () =
-    current_task ~default:"Finished"
-      (fun ptask ->
-         let timer = ptask#current_timer in
-         String.concat [ (Tasks.time_remaining ~timer) ; "\n" ; timer#name ])
+    let rec timer_of_current_task ptask =
+        match ptask#current_timer () with
+        | None -> ptask#attach_timer; timer_of_current_task ptask
+        | Some timer ->
+          String.concat [ (Tasks.time_remaining ~timer) ; "\n" ; timer#name ]
+    in
+    current_task ~default:"Finished" timer_of_current_task
   in
   let task_summary () =
     current_task ~default:"" (fun ptask -> ptask#long_summary)
@@ -143,7 +146,10 @@ let add_pomodoro_timer ~ptasks (box:box) =
   (Lwt_engine.on_timer Param.tick true
      (fun _ ->
         (* Make sure timer is in a consistent state *)
-        current_task ~default:() (fun ct -> ct#current_timer#update_running_meanwhile);
+        current_task ~default:()
+          (fun ct -> ct#current_timer ()
+           |> Option.iter
+             ~f:(fun ct -> ct#update_running_meanwhile));
         (* Update display *)
         clock#set_text (remaining_time ());
         ptask#set_text (task_summary ());

@@ -78,16 +78,16 @@ class ptask :
   of_timer list ->
   (of_timer -> timer) ->
   object ('a)
-    method current_timer : timer
+    method current_timer : unit -> timer option
     method description : string Avl.t
     method done_at : string option Avl.t
     method estimation : int option Avl.t
     method interruption : int option Avl.t
     method id : int
 
-    (* XXX Confusing *)
     method record_interruption : unit
-    method interrupt : unit
+    method remove_timer : unit
+    method attach_timer : unit
 
     method is_done : bool
     method long_summary : string

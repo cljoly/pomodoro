@@ -118,13 +118,15 @@ let read_log filename =
  * one and adding those in the new log file, even if they were not in the new
  * one. Makes sure we stop timers of task going deeper in the list *)
 let reread_log r_log =
-  (* Disable timer from tasks other than the first one *)
-  let disable_all_but_first =
-    function
-    | [] -> []
-    | (_ :: interrupted_tasks) as log ->
-      List.iter ~f:(fun timer -> timer#interrupt) interrupted_tasks;
-      log
+  (* Disable timer from tasks other than the first, active, one *)
+  let disable_all_but_first ptasks =
+    List.filter ~f:(fun ptask -> not ptask#is_done) ptasks
+    |> (function
+    | [] -> ()
+    | (_ :: task2stop) ->
+      List.iter ~f:(fun timer -> timer#remove_timer) task2stop;
+      );
+    ptasks
   in
   let fname = r_log.fname in (* Name is common to both logs *)
   let old_log = r_log.log in

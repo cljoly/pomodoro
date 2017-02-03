@@ -107,8 +107,10 @@ class timer duration of_type ~on_finish name running_meanwhile running_when_done
       |> ignore
   end
 
+(* TODO Create a special object for timer that are elleapsed and that do nothing *)
 let empty_timer () =
-  new timer 0. Short_break ~on_finish:(fun _ -> ()) "" "" ""
+  new timer 0. Short_break ~on_finish:(fun _ -> ()) "Empty" "" ""
+  |> Option.some
 ;;
 
 (* A task (written ptask to void conflict with lwt), like "Learn OCaml". Cycle
@@ -151,7 +153,7 @@ class ptask
     val cycle_length = cycle_length
     (* Position in the cycle, lead to problem if cycle is empty *)
     val mutable position = -1
-    val mutable current_timer = empty_timer ()
+    val mutable current_timer = None
     val number_of_pomodoro : int option Avl.t = new Avl.t number_of_pomodoro
 
     val interruption : int option Avl.t = new Avl.t interruption
@@ -159,30 +161,44 @@ class ptask
     method record_interruption =
       interruption#set
         (Some (Option.value_map ~default:(0+1) ~f:succ interruption#get));
-      current_timer#cancel
+      Option.iter current_timer ~f:(fun ct -> ct#cancel);
 
     val estimation : int option Avl.t = new Avl.t estimation
     method estimation = estimation
 
     method number_of_pomodoro = number_of_pomodoro
     (* Return current timer. Cycles through timers, as one finishes *)
-    method current_timer =
+    method current_timer () =
+      let is_some_finished =
+        Option.value_map ~default:false
+          ~f:(fun ct -> ct#is_finished)
+      in
       if
-        (status#get = Active)
-        && current_timer#is_finished
+        status#get = Active
+        && is_some_finished current_timer
       then begin
-        if current_timer#of_type = Pomodoro then
+        let ct = Option.value_exn current_timer in
+        if ct#of_type = Pomodoro
+        then
           number_of_pomodoro#set
             (Option.value ~default:0 number_of_pomodoro#get
              |> (fun nop -> nop + 1)
              |> Option.some);
         (* Circle through positions *)
         position <- (position + 1) mod cycle_length;
-        current_timer <- simple_timer (List.nth_exn cycle#get position);
-      end;
+        current_timer <- Some (simple_timer (List.nth_exn cycle#get position));
+      end
+      ;
       current_timer
-    (* Allow to interrupt a task *)
-    method interrupt = current_timer#cancel
+    (* To interrupt a task *)
+    method remove_timer = current_timer <- None
+    (* Attach a timer to a task *)
+    method attach_timer =
+      if Option.is_none current_timer
+      then begin
+        status#set Active;
+        current_timer <- empty_timer ()
+      end
 
     (* Returns a summary of the task, short or with more details *)
     method private summary ~long =
