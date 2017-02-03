@@ -113,7 +113,7 @@ let empty_timer () =
   |> Option.some
 ;;
 
-(* A task (written ptask to void conflict with lwt), like "Learn OCaml". Cycle
+(* A task (written ptask to avoid conflict with lwt), like "Learn OCaml". Cycle
  * sets the number and order of timers *)
 class ptask
     ?num (* Position in log file, useful to order tasks *)
@@ -140,7 +140,7 @@ class ptask
     val done_at = new Avl.t done_at
     method done_at = done_at
     method mark_done =
-      done_at#set T.(now () |> to_string |> Some);
+      done_at#set T.(now () |> to_string |> Option.some);
       status#set Done
     method status = status
     method is_done =
