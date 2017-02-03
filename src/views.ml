@@ -128,7 +128,7 @@ let add_pomodoro_timer ~ptasks (box:box) =
       match ptask#current_timer () with
       | None -> ptask#attach_timer; timer_of_current_task ptask
       | Some timer ->
-        String.concat [ (Tasks.time_remaining ~timer) ; "\n" ; timer#name ]
+        String.concat [ timer#name ; "\n" ; Tasks.time_remaining ~timer ]
     in
     current_task ~default:"Finished" timer_of_current_task
   in
