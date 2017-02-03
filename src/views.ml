@@ -86,13 +86,13 @@ class scrollable_task_list ~ptasks (scroll : scrollable) display_done_task =
               (fun t ->
                  t#status#print_both (function Tasks.Done -> "X" | Active -> " "))
           ; create "with" ~align:Align.Center
-            (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string))
+              (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string))
           ; create "at" ~align:Align.Center
-            (fun t -> t#done_at#print_both (soo String.to_string))
+              (fun t -> t#done_at#print_both (soo String.to_string))
           ; create "Interruption" ~align:Align.Center
-            (fun t -> t#interruption#print_both (soo Int.to_string))
+              (fun t -> t#interruption#print_both (soo Int.to_string))
           ; create "Estimation" ~align:Align.Center
-            (fun t -> t#estimation#print_both (soo Int.to_string))
+              (fun t -> t#estimation#print_both (soo Int.to_string))
           ]
           task_list
       in
@@ -125,10 +125,10 @@ let add_pomodoro_timer ~ptasks (box:box) =
   (* Allow to get remainging time for current ptask, if any one is yet active *)
   let remaining_time () =
     let rec timer_of_current_task ptask =
-        match ptask#current_timer () with
-        | None -> ptask#attach_timer; timer_of_current_task ptask
-        | Some timer ->
-          String.concat [ (Tasks.time_remaining ~timer) ; "\n" ; timer#name ]
+      match ptask#current_timer () with
+      | None -> ptask#attach_timer; timer_of_current_task ptask
+      | Some timer ->
+        String.concat [ (Tasks.time_remaining ~timer) ; "\n" ; timer#name ]
     in
     current_task ~default:"Finished" timer_of_current_task
   in
@@ -148,8 +148,8 @@ let add_pomodoro_timer ~ptasks (box:box) =
         (* Make sure timer is in a consistent state *)
         current_task ~default:()
           (fun ct -> ct#current_timer ()
-           |> Option.iter
-             ~f:(fun ct -> ct#update_running_meanwhile));
+                     |> Option.iter
+                       ~f:(fun ct -> ct#update_running_meanwhile));
         (* Update display *)
         clock#set_text (remaining_time ());
         ptask#set_text (task_summary ());

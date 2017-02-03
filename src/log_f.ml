@@ -122,9 +122,9 @@ let reread_log r_log =
   let disable_all_but_first ptasks =
     List.filter ~f:(fun ptask -> not ptask#is_done) ptasks
     |> (function
-    | [] -> ()
-    | (_ :: task2stop) ->
-      List.iter ~f:(fun timer -> timer#remove_timer) task2stop;
+        | [] -> ()
+        | (_ :: task2stop) ->
+          List.iter ~f:(fun timer -> timer#remove_timer) task2stop;
       );
     ptasks
   in

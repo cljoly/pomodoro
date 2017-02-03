@@ -208,21 +208,21 @@ class ptask
       in
       let done_at =
         done_at#print_both (Option.value_map~default:"(no done date)"
-          ~f: (fun date -> sprintf "(done at %s)" date))
+                              ~f: (fun date -> sprintf "(done at %s)" date))
       in
       let nb =
         sprintf "with %s pomodoro" (number_of_pomodoro#print_both
-          (Option.value_map ~f:Int.to_string ~default:"0"))
+                                      (Option.value_map ~f:Int.to_string ~default:"0"))
       in
       let interruption =
         sprintf "interrruption: %s"
           (interruption#print_both
-            (Option.value_map ~default:"0" ~f:Int.to_string))
+             (Option.value_map ~default:"0" ~f:Int.to_string))
       in
       let estimation =
         sprintf "estimation: %s"
           (estimation#print_both
-            (Option.value_map ~default:"0" ~f:Int.to_string))
+             (Option.value_map ~default:"0" ~f:Int.to_string))
       in
       (* Display only what is needed *)
       Option.[
