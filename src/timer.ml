@@ -97,8 +97,16 @@ class timer duration of_type ~on_finish name running_meanwhile running_when_done
       | _ -> sprintf "%i:%i:%i" hr min sec
 
     method is_finished = Option.is_none s#remaining
-    method cancel =
+    method mark_finished =
       if not marked_finished then marked_finished <- true
+    (* Do as if the timer would have start right now *)
+    method reset =
+      (* Only a Pomodoro timer may be interrupted *)
+      if s#of_type = Pomodoro
+      then
+        {< start_time = T.now () >}
+      else
+        s
 
     (* Command running as long as the timer is not finished, launched at
      * instanciation *)

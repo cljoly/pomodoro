@@ -91,7 +91,7 @@ class ptask
     method record_interruption =
       interruption#set
         (Some (Option.value_map ~default:(0+1) ~f:succ interruption#get));
-      Option.iter current_timer ~f:(fun ct -> ct#cancel);
+      current_timer <- Option.map current_timer ~f:(fun ct -> ct#reset);
 
     val day : Date.t option Avl.t = new Avl.t day
     method day = day

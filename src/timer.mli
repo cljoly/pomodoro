@@ -56,7 +56,8 @@ class timer :
     val running_when_done : string
     val start_time : T.t
     method private call_on_finish_once : unit
-    method cancel : unit
+    method mark_finished : unit
+    method reset : 'a
     method is_finished : bool
     method name : string
     method of_type : of_timer
