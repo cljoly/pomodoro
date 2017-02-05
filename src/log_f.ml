@@ -78,23 +78,23 @@ let read_log filename =
   in
   let log = read_log 30 in
   let durations = [
-    ( Tasks.Pomodoro, (log.settings.pomodoro_duration, "Pomodoro") );
-    ( Tasks.Short_break, (log.settings.short_break_duration, "Short break") );
-    ( Tasks.Long_break, (log.settings.long_break_duration, "Long break") )
+    ( Timer.Pomodoro, (log.settings.pomodoro_duration, "Pomodoro") );
+    ( Timer.Short_break, (log.settings.short_break_duration, "Short break") );
+    ( Timer.Long_break, (log.settings.long_break_duration, "Long break") )
   ] in
   let simple_timer of_timer = (* Simplified instanciation of class timer *)
     let ticking_command = log.settings.ticking_command in
     let ringing_command = log.settings.ringing_command in
     let (duration, name) = List.Assoc.find_exn durations of_timer in
-    new Tasks.timer duration of_timer ~on_finish:Tasks.on_finish name ticking_command ringing_command
+    new Timer.timer duration of_timer ~on_finish:Timer.on_finish name ticking_command ringing_command
   in
   (* We do 4 pomodoroes, with a short break between each, before taking a long
    * break *)
   let cycle = (* TODO Allow to configure this *)
-    [ Tasks.Pomodoro ; Tasks.Short_break
-    ; Tasks.Pomodoro ; Tasks.Short_break
-    ; Tasks.Pomodoro ; Tasks.Short_break
-    ; Tasks.Pomodoro ; Tasks.Long_break
+    [ Timer.Pomodoro ; Timer.Short_break
+    ; Timer.Pomodoro ; Timer.Short_break
+    ; Timer.Pomodoro ; Timer.Short_break
+    ; Timer.Pomodoro ; Timer.Long_break
     ]
   in
   {

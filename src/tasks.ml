@@ -36,82 +36,11 @@ knowledge of the CeCILL-B license and that you accept its terms.
 open Core.Std;;
 
 module T = Time;;
-module Ts = Time.Span;;
 
 (* Task plumbery *)
 
 (* Some type to describe states of ptasks *)
 type status = Active | Done;;
-(* Type of timer *)
-type of_timer =
-    Pomodoro | Short_break | Long_break
-;;
-
-(* Create a timer of duration (in minute). The on_exit function is called the
- * first time the timer is finished *)
-class timer duration of_type ~on_finish name running_meanwhile running_when_done =
-  let run_meanwhile () =
-    Lwt_process.shell running_meanwhile
-    |> Lwt_process.open_process_none
-  in
-  object(s)
-    val name : string = name
-    method name = name
-    val duration = Ts.of_min duration
-    val start_time = T.now ()
-    val mutable marked_finished = false
-
-    val of_type : of_timer = of_type
-    method of_type = of_type
-
-    method private call_on_finish_once =
-      if not marked_finished
-      then begin
-        on_finish s;
-        marked_finished <- true
-      end
-
-    method remaining =
-      let now = T.now () in
-      let eleapsed_time = T.diff now start_time in
-      let remaining_time = Ts.(duration - eleapsed_time) in
-      if Ts.(eleapsed_time < duration)
-      then Some remaining_time (* Time remaining *)
-      else begin
-        s#call_on_finish_once;
-        None
-      end
-    method is_finished = Option.is_none s#remaining
-    method cancel =
-      if not marked_finished then marked_finished <- true
-
-    (* Command running as long as the timer is not finished, launched at
-     * instanciation *)
-    val mutable running_meanwhile = run_meanwhile ()
-    (* Stop and keep running when necessary *)
-    method update_running_meanwhile =
-      let make_sure_its_running () =
-        running_meanwhile#state
-        |> function | Lwt_process.Running -> ()
-                    | Lwt_process.Exited _ -> running_meanwhile <- run_meanwhile ()
-      in
-      if s#is_finished
-      then running_meanwhile#terminate
-      else make_sure_its_running ()
-
-    (* Command to run when finish *)
-    val running_when_done = running_when_done
-    method run_done =
-      Lwt_process.shell running_when_done
-      |> Lwt_process.exec ~timeout:4. (* TODO Configure it *)
-      |> ignore
-  end
-
-(* TODO Create a special object for timer that are elleapsed and that do nothing *)
-let empty_timer () =
-  new timer 0. Short_break ~on_finish:(fun _ -> ()) "Empty" "" ""
-  |> Option.some
-;;
 
 (* A task (written ptask to avoid conflict with lwt), like "Learn OCaml". Cycle
  * sets the number and order of timers *)
@@ -124,7 +53,7 @@ class ptask
     ?estimation
     ?interruption
     cycle
-    (simple_timer:(of_timer -> timer))
+    (simple_timer:(Timer.of_timer -> Timer.timer))
   =
   let cycle_length = List.length cycle in
   object(s:'s)
@@ -149,7 +78,7 @@ class ptask
     val num : int option Avl.t = new Avl.t num
     method num = num
 
-    val cycle : of_timer list Avl.t = new Avl.t cycle
+    val cycle : Timer.of_timer list Avl.t = new Avl.t cycle
     val cycle_length = cycle_length
     (* Position in the cycle, lead to problem if cycle is empty *)
     val mutable position = -1
@@ -178,7 +107,7 @@ class ptask
         && is_some_finished current_timer
       then begin
         let ct = Option.value_exn current_timer in
-        if ct#of_type = Pomodoro
+        if ct#of_type = Timer.Pomodoro
         then
           number_of_pomodoro#set
             (Option.value ~default:0 number_of_pomodoro#get
@@ -197,7 +126,7 @@ class ptask
       if Option.is_none current_timer
       then begin
         status#set Active;
-        current_timer <- empty_timer ()
+        current_timer <- Timer.empty_timer ()
       end
 
     (* Returns a summary of the task, short or with more details *)
@@ -265,16 +194,6 @@ class ptask
       >}
   end
 
-(* Pretty printing of remaining time *)
-let time_remaining ~timer =
-  timer#remaining |> Option.value ~default:(Ts.create ())
-  (* XXX Manual pretty printing *)
-  |> Ts.to_parts |> fun { Ts.Parts.hr ; min; sec ; _ } ->
-  hr |> function
-  | 0 -> sprintf "%i:%i" min sec
-  | _ -> sprintf "%i:%i:%i" hr min sec
-;;
-
 (* Get first ptask not marked as done *)
 let rec get_pending = function
   | hd :: tl ->
@@ -282,13 +201,5 @@ let rec get_pending = function
     then get_pending tl
     else Some hd
   | [] -> None
-;;
-
-(* When a timer is finished, notify *)
-let on_finish timer =
-  sprintf "notify-send '%s ended.'" timer#name
-  |> Sys.command
-  |> ignore;
-  timer#run_done
 ;;
 
