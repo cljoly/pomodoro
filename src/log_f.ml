@@ -56,6 +56,7 @@ type task_sexp = {
   (* Write down an estimation of the number of needed pomodoro *)
   estimation : int sexp_option;
   interruption : int sexp_option; (* Track interruptions *)
+  day : Date.t sexp_option (* The day you plan to do the task *)
 } [@@deriving sexp]
 type log = {
   settings : settings;
@@ -109,6 +110,7 @@ let read_log filename =
               ?number_of_pomodoro:task_sexp.done_with
               ?estimation:task_sexp.estimation
               ?interruption:task_sexp.interruption
+              ?day:task_sexp.day
               cycle
               simple_timer
           );

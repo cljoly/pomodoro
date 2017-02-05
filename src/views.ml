@@ -44,7 +44,7 @@ open LTerm_geom;;
 (* A view with both task and pomodoro timers *)
 
 (* Scrollable list of tasks *)
-class scrollable_task_list ~ptasks (scroll : scrollable) display_done_task =
+class scrollable_task_list ~ptasks (scroll : scrollable) display_task =
   let log () = !ptasks.Log_f.log in
   object
     inherit t "task_list"
@@ -93,23 +93,24 @@ class scrollable_task_list ~ptasks (scroll : scrollable) display_done_task =
               (fun t -> t#interruption#print_both (soo Int.to_string))
           ; create "Estimation" ~align:Align.Center
               (fun t -> t#estimation#print_both (soo Int.to_string))
+          ; create "Day" ~align:Align.Center
+              (fun t -> t#day#print_both (soo Date.to_string))
           ]
           task_list
       in
       let offset = scroll#offset in
       log ()
-      |> List.filter
-        ~f:(fun task -> (!display_done_task || not task#is_done))
+      |> List.filter ~f:display_task
       |> select_task offset
       |> draw_table_of_task
       |> LTerm_draw.draw_string ctx 0 0
   end;;
 
 (* Place scrollable task list *)
-let  add_scroll_task_list ~ptasks (box : box) display_done_task =
+let add_scroll_task_list ~ptasks (box : box) display_task =
   let adj = new scrollable in
   let scroll = new vscrollbar adj in
-  let task_list = new scrollable_task_list ~ptasks adj display_done_task in
+  let task_list = new scrollable_task_list ~ptasks adj display_task in
   box#add ~expand:true task_list;
   box#add ~expand:false scroll;
   adj#on_offset_change (fun _ -> scroll#queue_draw);
@@ -172,7 +173,7 @@ let add_pomodoro_timer ~ptasks (box:box) =
 ;;
 
 (* Add buttons, in an horizontal box *)
-let add_bottom_btn ~(main:vbox) ~(adj:scrollable) ~wakener display_done_task =
+let add_bottom_btn ~(main:vbox) ~(adj:scrollable) ~wakener display_done_task display_today_only=
   let hbox = new hbox in
   (* Scroll down *)
   let down_btn = new button "Down" in
@@ -184,12 +185,19 @@ let add_bottom_btn ~(main:vbox) ~(adj:scrollable) ~wakener display_done_task =
   let toggle_done_btn = new button "Toggle done" in
   toggle_done_btn#on_click (fun () ->
       display_done_task := not !display_done_task;);
+  (* Show only todays task or not *)
+  let toggle_today_btn =
+    new button Date.(today ~zone:Core.Zone.local |> to_string |> sprintf "Toggle today (%s)")
+  in
+  toggle_today_btn#on_click (fun () ->
+      display_today_only := not !display_today_only;);
   let exit_btn = new button "Exit" in
   exit_btn#on_click (fun () -> wakeup wakener ());
 
   hbox#add ~expand:true down_btn;
   hbox#add ~expand:true up_btn;
   hbox#add ~expand:true toggle_done_btn;
+  hbox#add ~expand:true toggle_today_btn;
   hbox#add ~expand:true exit_btn;
   main#add ~expand:false hbox;
 ;;
@@ -199,12 +207,24 @@ let mainv ~ptasks () =
   let waiter, wakener = wait () in
   let main = new vbox in
   let display_done_task = ref false in
+  let display_today_only = ref false in
+
+  (* Whether a task should be displayed or not, on done and date criteria *)
+  let display_task task =
+    (!display_done_task || not task#is_done)
+    &&
+    (not !display_today_only ||
+     Option.value_map ~default:false task#day#get
+       ~f:(fun day ->
+           Date.equal (Date.today ~zone:Core.Zone.local) day)
+    )
+  in
 
   add_pomodoro_timer ~ptasks main;
   main#add ~expand:false (new hline);
-  let ( _, _, adj) = add_scroll_task_list ~ptasks main display_done_task in
+  let ( _, _, adj) = add_scroll_task_list ~ptasks main display_task in
   main#add ~expand:false (new hline);
-  add_bottom_btn ~main ~adj ~wakener display_done_task;
+  add_bottom_btn ~main ~adj ~wakener display_done_task display_today_only;
 
   Lazy.force LTerm.stdout >>= fun term ->
   LTerm.enable_mouse term >>= fun () ->

@@ -52,6 +52,7 @@ class ptask
     ?number_of_pomodoro
     ?estimation
     ?interruption
+    ?day
     cycle
     (simple_timer:(Timer.of_timer -> Timer.timer))
   =
@@ -91,6 +92,9 @@ class ptask
       interruption#set
         (Some (Option.value_map ~default:(0+1) ~f:succ interruption#get));
       Option.iter current_timer ~f:(fun ct -> ct#cancel);
+
+    val day : Date.t option Avl.t = new Avl.t day
+    method day = day
 
     val estimation : int option Avl.t = new Avl.t estimation
     method estimation = estimation
@@ -190,6 +194,7 @@ class ptask
         number_of_pomodoro = number_of_pomodoro#update_log another#number_of_pomodoro#get;
         done_at = done_at#update_log another#done_at#get;
         interruption = interruption#update_log another#interruption#get;
+        day = day#update_log another#day#get |> update_actual;
         estimation = estimation#update_log another#estimation#get;
       >}
   end

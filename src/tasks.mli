@@ -47,6 +47,7 @@ class ptask :
   ?number_of_pomodoro:int ->
   ?estimation:int ->
   ?interruption:int ->
+  ?day:Date.t ->
   Timer.of_timer list ->
   (Timer.of_timer -> Timer.timer) ->
   object ('a)
@@ -55,6 +56,7 @@ class ptask :
     method done_at : string option Avl.t
     method estimation : int option Avl.t
     method interruption : int option Avl.t
+    method day : Date.t option Avl.t
     method id : int
 
     method record_interruption : unit
