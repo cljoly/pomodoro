@@ -59,7 +59,7 @@ class ptask :
     method day : Date.t option Avl.t
     method id : int
 
-    method record_interruption : unit
+    method record_interruption : long:bool -> unit
     method remove_timer : unit
     method attach_timer : unit
 

@@ -140,7 +140,9 @@ let add_pomodoro_timer ~ptasks (box:box) =
   let vbox = new vbox in
   let clock = new label (remaining_time ()) in
   let ptask = new label "" in
-  let inter_btn = new button "Interruption" in
+  let btn_hbox = new hbox in
+  let linter_btn = new button "Long interruption" in
+  let sinter_btn = new button "Short interruption" in
   let done_btn = new button "Done" in
 
   (* Update the time on every tick *)
@@ -158,17 +160,21 @@ let add_pomodoro_timer ~ptasks (box:box) =
   |> ignore;
 
   (* Record interruptions *)
-  inter_btn#on_click
-    (fun () -> current_task ~default:() (fun t -> t#record_interruption));
+  linter_btn#on_click
+    (fun () -> current_task ~default:() (fun t -> t#record_interruption ~long:true));
+  sinter_btn#on_click
+    (fun () -> current_task ~default:() (fun t -> t#record_interruption ~long:false));
 
   (* Mark task as finished when done button is pressed *)
   done_btn#on_click
     (fun () -> current_task ~default:() (fun t -> t#mark_done));
 
+  btn_hbox#add ~expand:true linter_btn;
+  btn_hbox#add ~expand:true sinter_btn;
+  btn_hbox#add ~expand:true done_btn;
   vbox#add ~expand:true clock;
   vbox#add ~expand:true ptask;
-  vbox#add ~expand:true inter_btn;
-  vbox#add ~expand:true done_btn;
+  vbox#add btn_hbox ~expand:true;
   box#add ~expand:false vbox;
 ;;
 

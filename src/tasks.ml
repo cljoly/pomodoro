@@ -88,10 +88,13 @@ class ptask
 
     val interruption : int option Avl.t = new Avl.t interruption
     method interruption = interruption
-    method record_interruption =
+    (* Record an interruption which reset timer if its too long *)
+    method record_interruption ~long =
       interruption#set
         (Some (Option.value_map ~default:(0+1) ~f:succ interruption#get));
-      current_timer <- Option.map current_timer ~f:(fun ct -> ct#reset);
+      if long
+      then
+        current_timer <- Option.map current_timer ~f:(fun ct -> ct#reset);
 
     val day : Date.t option Avl.t = new Avl.t day
     method day = day
