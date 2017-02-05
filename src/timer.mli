@@ -61,12 +61,11 @@ class timer :
     method name : string
     method of_type : of_timer
     method remaining : Ts.t option
+    method remaining_str : string
     method run_done : unit
     method update_running_meanwhile : unit
   end
 
 val empty_timer : unit -> timer option
-
-val time_remaining : timer:< remaining : Ts.t option; .. > -> string
 
 val on_finish : timer -> unit

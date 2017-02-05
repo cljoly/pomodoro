@@ -45,8 +45,15 @@ type of_timer =
     Pomodoro | Short_break | Long_break
 ;;
 
+(* When a timer is finished, notify *)
+let on_finish timer =
+  sprintf "notify-send '%s ended.'" timer#name
+  |> Sys.command
+  |> ignore;
+  timer#run_done
+;;
 
-(* Create a timer of duration (in minute). The on_exit function is called the
+(* A timer of duration (in minute). The on_exit function is called the
  * first time the timer is finished *)
 class timer duration of_type ~on_finish name running_meanwhile running_when_done =
   let run_meanwhile () =
@@ -80,6 +87,15 @@ class timer duration of_type ~on_finish name running_meanwhile running_when_done
         s#call_on_finish_once;
         None
       end
+    (* Pretty printing of remaining time *)
+    method remaining_str =
+      s#remaining |> Option.value ~default:(Ts.create ())
+      (* XXX Manual pretty printing *)
+      |> Ts.to_parts |> fun { Ts.Parts.hr ; min; sec ; _ } ->
+      hr |> function
+      | 0 -> sprintf "%i:%i" min sec
+      | _ -> sprintf "%i:%i:%i" hr min sec
+
     method is_finished = Option.is_none s#remaining
     method cancel =
       if not marked_finished then marked_finished <- true
@@ -110,23 +126,5 @@ class timer duration of_type ~on_finish name running_meanwhile running_when_done
 let empty_timer () =
   new timer 0. Short_break ~on_finish:(fun _ -> ()) "Empty" "" ""
   |> Option.some
-;;
-
-(* Pretty printing of remaining time *)
-let time_remaining ~timer =
-  timer#remaining |> Option.value ~default:(Ts.create ())
-  (* XXX Manual pretty printing *)
-  |> Ts.to_parts |> fun { Ts.Parts.hr ; min; sec ; _ } ->
-  hr |> function
-  | 0 -> sprintf "%i:%i" min sec
-  | _ -> sprintf "%i:%i:%i" hr min sec
-;;
-
-(* When a timer is finished, notify *)
-let on_finish timer =
-  sprintf "notify-send '%s ended.'" timer#name
-  |> Sys.command
-  |> ignore;
-  timer#run_done
 ;;
 
