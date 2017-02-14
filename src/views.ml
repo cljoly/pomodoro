@@ -124,7 +124,8 @@ let add_pomodoro_timer ~log (box:box) =
     |> Option.value_map ~f ~default
   in
   let timer_cycle : Timer.cycling =
-    new Timer.cycling ~log ?cycle:None
+    new Timer.cycling ~log
+      ?cycle:None
   in
   (* Allow to get remaining time *)
   let remaining_time () =

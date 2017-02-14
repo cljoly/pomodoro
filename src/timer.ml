@@ -62,7 +62,7 @@ let on_finish timer =
 
 (* A timer of duration (in minute). The on_exit function is called the
  * first time the timer is finished *)
-class timer duration of_type ~on_finish name running_meanwhile running_when_done =
+class timer duration of_type ~on_finish name running_meanwhile ?max_done_duration running_when_done =
   let run_meanwhile () =
     Lwt_process.shell running_meanwhile
     |> Lwt_process.open_process_none
@@ -132,8 +132,11 @@ class timer duration of_type ~on_finish name running_meanwhile running_when_done
     (* Command to run when finish *)
     val running_when_done = running_when_done
     method run_done =
+      let timeout =
+        Option.value ~default:0.4 max_done_duration
+      in
       Lwt_process.shell running_when_done
-      |> Lwt_process.exec ~timeout:4. (* TODO Configure it *)
+      |> Lwt_process.exec ~timeout
       |> ignore
   end
 
@@ -148,7 +151,12 @@ class cycling ?cycle ~log =
     let ticking_command = !log.Log_f.settings.ticking_command in
     let ringing_command = !log.Log_f.settings.ringing_command in
     let (duration, name) = durations_and_name !log of_timer in
-    new timer duration of_timer ~on_finish:on_finish name ticking_command ringing_command
+    new timer duration of_timer
+      ~on_finish:on_finish
+      name
+      ticking_command
+      ringing_command
+      ?max_done_duration:!log.settings.max_ring_duration
   in
   (* We do 4 pomodoroes, with a short break between each, before taking a long
    * break *)

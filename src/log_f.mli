@@ -46,6 +46,8 @@ type settings_sexp = {
   ticking_command : string;
   (* Command to play sound when pomodoro is finished *)
   ringing_command : string;
+  (* Maximum time the ringing command is allowed to run *)
+  max_ring_duration : float sexp_option;
 }
 type read_log = {
     fname : string;

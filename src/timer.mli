@@ -46,6 +46,7 @@ class timer :
   on_finish:('a -> unit) ->
   string ->
   string ->
+  ?max_done_duration:float ->
   string ->
   object ('a)
     val duration : Ts.t
