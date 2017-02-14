@@ -44,6 +44,13 @@ module Ts = Time.Span;;
 type of_timer =
     Pomodoro | Short_break | Long_break
 ;;
+(* Return durations associated in log file for each type of timer *)
+let durations_and_name log =
+  function
+    | Pomodoro -> (log.Log_f.settings.pomodoro_duration, "Pomodoro")
+    | Short_break -> (log.Log_f.settings.short_break_duration, "Short break")
+    | Long_break -> (log.Log_f.settings.long_break_duration, "Long break")
+;;
 
 (* When a timer is finished, notify *)
 let on_finish timer =
@@ -133,6 +140,45 @@ class timer duration of_type ~on_finish name running_meanwhile running_when_done
 (* TODO Create a special object for timer that are elleapsed and that do nothing *)
 let empty_timer () =
   new timer 0. Short_break ~on_finish:(fun _ -> ()) "Empty" "" ""
-  |> Option.some
 ;;
 
+class cycling ?cycle ~log =
+  (* Simplified instanciation of class timer *)
+  let simple_timer of_timer =
+    let ticking_command = !log.Log_f.settings.ticking_command in
+    let ringing_command = !log.Log_f.settings.ringing_command in
+    let (duration, name) = durations_and_name !log of_timer in
+    new timer duration of_timer ~on_finish:on_finish name ticking_command ringing_command
+  in
+  (* We do 4 pomodoroes, with a short break between each, before taking a long
+   * break *)
+  let cycle = (* TODO Allow to configure this *)
+    Option.value cycle
+      ~default:[ Pomodoro ; Short_break
+               ; Pomodoro ; Short_break
+               ; Pomodoro ; Short_break
+               ; Pomodoro ; Long_break
+               ]
+  in
+  (* lead to problem if cycle is empty, for instance with `position` instance variable *)
+  let _ = assert (cycle <> []) in
+  let cycle_length = List.length cycle in
+  object (s:'s)
+    val cycle : of_timer list Avl.t = new Avl.t cycle
+    val cycle_length = cycle_length
+    val mutable position = -1
+    val mutable current_timer = empty_timer ()
+    (* Circle through positions *)
+    method private next_position =
+      position <- (position + 1) mod cycle_length;
+      current_timer <- simple_timer (List.nth_exn cycle#get position)
+    method get final_call =
+      if current_timer#is_finished then begin
+        final_call current_timer;
+        s#next_position
+      end;
+      current_timer
+    method map_current_timer ~f =
+      current_timer <- f current_timer
+  end
+;;

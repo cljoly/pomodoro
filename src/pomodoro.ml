@@ -37,7 +37,7 @@ open Core.Std;;
 
 let () =
   (* Get timers with command line arguments, mutable to allow easier update *)
-  let ptasks = ref (
+  let log = ref (
       Sys.argv |> function
       | [| _ ; name |] -> Log_f.read_log name
       | _ -> failwith "Needs exactly one argument, filename of your log file."
@@ -45,8 +45,8 @@ let () =
   (* Update log file *)
   (Lwt_engine.on_timer Param.log_tick true
      (fun _ ->
-        ptasks := Log_f.reread_log !ptasks))
+        log := Log_f.reread_log !log))
   |> ignore;
 
-  Lwt_main.run (Views.mainv ~ptasks ())
+  Lwt_main.run (Views.mainv ~log ())
 ;;

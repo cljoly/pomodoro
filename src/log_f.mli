@@ -37,6 +37,20 @@ Inspired by example of lambda-term library, (c) 2011, Jeremie Dimino <jeremie@di
 
 open Core.Std;;
 
-type read_log = { fname : string; log : Tasks.ptask list }
+type settings_sexp = {
+  (* Defaults from pomodoro guide *)
+  pomodoro_duration : float;
+  short_break_duration : float;
+  long_break_duration : float;
+  (* Command to play sound while pomodoro is running *)
+  ticking_command : string;
+  (* Command to play sound when pomodoro is finished *)
+  ringing_command : string;
+}
+type read_log = {
+    fname : string;
+    settings : settings_sexp;
+    ptasks : Tasks.ptask list;
+}
 val read_log : string -> read_log
 val reread_log : read_log -> read_log

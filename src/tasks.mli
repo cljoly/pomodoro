@@ -48,10 +48,7 @@ class ptask :
   ?estimation:int ->
   ?interruption:int ->
   ?day:Date.t ->
-  Timer.of_timer list ->
-  (Timer.of_timer -> Timer.timer) ->
   object ('a)
-    method current_timer : unit -> Timer.timer option
     method description : string Avl.t
     method done_at : string option Avl.t
     method estimation : int option Avl.t
@@ -60,15 +57,16 @@ class ptask :
     method id : int
 
     method record_interruption : long:bool -> unit
-    method remove_timer : unit
-    method attach_timer : unit
 
     method is_done : bool
     method long_summary : string
     method mark_done : unit
     method name : string Avl.t
     method num : int option Avl.t
+
     method number_of_pomodoro : int option Avl.t
+    method record_pomodoro : unit
+
     method short_summary : string
     method status : status Avl.t
     method private summary : long:bool -> string

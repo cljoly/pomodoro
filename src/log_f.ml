@@ -38,7 +38,7 @@ open Core.Std;;
 (* Tools with log file *)
 
 (* Simple log of pomodoros & tasks, with settings *)
-type settings = {
+type settings_sexp = {
   (* Defaults from pomodoro guide *)
   pomodoro_duration : float;
   short_break_duration : float;
@@ -59,12 +59,12 @@ type task_sexp = {
   day : Date.t sexp_option (* The day you plan to do the task *)
 } [@@deriving sexp]
 type log = {
-  settings : settings;
+  settings : settings_sexp;
   tasks : task_sexp list
 } [@@deriving sexp]
 
 (* fname stands for filename *)
-type read_log = { fname : string ; log : Tasks.ptask list }
+type read_log = { fname : string ; settings : settings_sexp ; ptasks : Tasks.ptask list }
 
 (* Read log containing tasks and settings, tries multiple times since user may
  * edit file and lead to temporal removal *)
@@ -78,29 +78,10 @@ let read_log filename =
       else raise exn
   in
   let log = read_log 30 in
-  let durations = [
-    ( Timer.Pomodoro, (log.settings.pomodoro_duration, "Pomodoro") );
-    ( Timer.Short_break, (log.settings.short_break_duration, "Short break") );
-    ( Timer.Long_break, (log.settings.long_break_duration, "Long break") )
-  ] in
-  let simple_timer of_timer = (* Simplified instanciation of class timer *)
-    let ticking_command = log.settings.ticking_command in
-    let ringing_command = log.settings.ringing_command in
-    let (duration, name) = List.Assoc.find_exn durations of_timer in
-    new Timer.timer duration of_timer ~on_finish:Timer.on_finish name ticking_command ringing_command
-  in
-  (* We do 4 pomodoroes, with a short break between each, before taking a long
-   * break *)
-  let cycle = (* TODO Allow to configure this *)
-    [ Timer.Pomodoro ; Timer.Short_break
-    ; Timer.Pomodoro ; Timer.Short_break
-    ; Timer.Pomodoro ; Timer.Short_break
-    ; Timer.Pomodoro ; Timer.Long_break
-    ]
-  in
   {
     fname = filename;
-    log = List.mapi log.tasks
+    settings = log.settings;
+    ptasks = List.mapi log.tasks
         ~f:(fun task_position (task_sexp:task_sexp) ->
             new Tasks.ptask
               ~num:task_position
@@ -111,8 +92,6 @@ let read_log filename =
               ?estimation:task_sexp.estimation
               ?interruption:task_sexp.interruption
               ?day:task_sexp.day
-              cycle
-              simple_timer
           );
   }
 
@@ -121,22 +100,14 @@ let read_log filename =
  * one. Makes sure we stop timers of task going deeper in the list *)
 let reread_log r_log =
   (* Disable timer from tasks other than the first, active, one *)
-  let disable_all_but_first ptasks =
-    List.filter ~f:(fun ptask -> not ptask#is_done) ptasks
-    |> (function
-        | [] -> ()
-        | (_ :: task2stop) ->
-          List.iter ~f:(fun timer -> timer#remove_timer) task2stop;
-      );
-    ptasks
-  in
   let fname = r_log.fname in (* Name is common to both logs *)
-  let old_log = r_log.log in
-  let new_log = (read_log fname).log in
-  let log = (* Merge current state and log file *)
-    List.map new_log
+  let new_log = (read_log fname) in
+  let old_ptasks = r_log.ptasks in
+  let new_ptasks = (read_log fname).ptasks in
+  let ptasks = (* Merge current state and log file *)
+    List.map new_ptasks
       ~f:(fun new_task ->
-          List.find_map old_log
+          List.find_map old_ptasks
             ~f:(fun old_task ->
                 if new_task#id = old_task#id
                 then Some (old_task#update_with new_task)
@@ -144,7 +115,7 @@ let reread_log r_log =
               )
           |> Option.value ~default:new_task
         )
-    |> disable_all_but_first
   in
-  { fname ; log }
+  (* Erase old settings TODO merge old and new *)
+  { fname ; ptasks ; settings = new_log.settings }
 ;;

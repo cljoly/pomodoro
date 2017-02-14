@@ -53,10 +53,7 @@ class ptask
     ?estimation
     ?interruption
     ?day
-    cycle
-    (simple_timer:(Timer.of_timer -> Timer.timer))
   =
-  let cycle_length = List.length cycle in
   object(s:'s)
     val name : string Avl.t = new Avl.t name
     val description : string Avl.t = new Avl.t description
@@ -79,22 +76,20 @@ class ptask
     val num : int option Avl.t = new Avl.t num
     method num = num
 
-    val cycle : Timer.of_timer list Avl.t = new Avl.t cycle
-    val cycle_length = cycle_length
-    (* Position in the cycle, lead to problem if cycle is empty *)
-    val mutable position = -1
-    val mutable current_timer = None
     val number_of_pomodoro : int option Avl.t = new Avl.t number_of_pomodoro
+    (* Record one more pomodoro *)
+    method record_pomodoro =
+      number_of_pomodoro#set
+        (Option.value ~default:0 number_of_pomodoro#get
+         |> (fun nop -> nop + 1)
+         |> Option.some);
 
     val interruption : int option Avl.t = new Avl.t interruption
     method interruption = interruption
     (* Record an interruption which reset timer if its too long *)
-    method record_interruption ~long =
+    method record_interruption ~(long:bool) =
       interruption#set
         (Some (Option.value_map ~default:(0+1) ~f:succ interruption#get));
-      if long
-      then
-        current_timer <- Option.map current_timer ~f:(fun ct -> ct#reset);
 
     val day : Date.t option Avl.t = new Avl.t day
     method day = day
@@ -103,38 +98,6 @@ class ptask
     method estimation = estimation
 
     method number_of_pomodoro = number_of_pomodoro
-    (* Return current timer. Cycles through timers, as one finishes *)
-    method current_timer () =
-      let is_some_finished =
-        Option.value_map ~default:false
-          ~f:(fun ct -> ct#is_finished)
-      in
-      if
-        status#get = Active
-        && is_some_finished current_timer
-      then begin
-        let ct = Option.value_exn current_timer in
-        if ct#of_type = Timer.Pomodoro
-        then
-          number_of_pomodoro#set
-            (Option.value ~default:0 number_of_pomodoro#get
-             |> (fun nop -> nop + 1)
-             |> Option.some);
-        (* Circle through positions *)
-        position <- (position + 1) mod cycle_length;
-        current_timer <- Some (simple_timer (List.nth_exn cycle#get position));
-      end
-      ;
-      current_timer
-    (* To interrupt a task *)
-    method remove_timer = current_timer <- None
-    (* Attach a timer to a task *)
-    method attach_timer =
-      if Option.is_none current_timer
-      then begin
-        status#set Active;
-        current_timer <- Timer.empty_timer ()
-      end
 
     (* Returns a summary of the task, short or with more details *)
     method private summary ~long =

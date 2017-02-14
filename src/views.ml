@@ -44,12 +44,12 @@ open LTerm_geom;;
 (* A view with both task and pomodoro timers *)
 
 (* Scrollable list of tasks *)
-class scrollable_task_list ~ptasks (scroll : scrollable) display_task =
-  let log () = !ptasks.Log_f.log in
+class scrollable_task_list ~log (scroll : scrollable) display_task =
+  let ptasks () = !log.Log_f.ptasks in
   object
     inherit t "task_list"
 
-    initializer scroll#set_range (List.length (log ()))
+    initializer scroll#set_range (List.length (ptasks ()))
 
     method! can_focus = false
 
@@ -99,7 +99,7 @@ class scrollable_task_list ~ptasks (scroll : scrollable) display_task =
           task_list
       in
       let offset = scroll#offset in
-      log ()
+      ptasks ()
       |> List.filter ~f:display_task
       |> select_task offset
       |> draw_table_of_task
@@ -107,31 +107,37 @@ class scrollable_task_list ~ptasks (scroll : scrollable) display_task =
   end;;
 
 (* Place scrollable task list *)
-let add_scroll_task_list ~ptasks (box : box) display_task =
+let add_scroll_task_list ~log (box : box) display_task =
   let adj = new scrollable in
   let scroll = new vscrollbar adj in
-  let task_list = new scrollable_task_list ~ptasks adj display_task in
+  let task_list = new scrollable_task_list ~log adj display_task in
   box#add ~expand:true task_list;
   box#add ~expand:false scroll;
   adj#on_offset_change (fun _ -> scroll#queue_draw);
   (task_list, scroll, adj)
 ;;
 
-(* Place pomodoro timer *)
-let add_pomodoro_timer ~ptasks (box:box) =
+(* Place the pomodoro timer *)
+let add_pomodoro_timer ~log (box:box) =
   let current_task ~default f =
-    Tasks.get_pending !ptasks.Log_f.log
+    Tasks.get_pending !log.Log_f.ptasks
     |> Option.value_map ~f ~default
   in
-  (* Allow to get remaining time for current ptask, if any one is yet active *)
+  let timer_cycle : Timer.cycling =
+    new Timer.cycling ~log ?cycle:None
+  in
+  (* Allow to get remaining time *)
   let remaining_time () =
-    let rec timer_of_current_task ptask =
-      match ptask#current_timer () with
-      | None -> ptask#attach_timer; timer_of_current_task ptask
-      | Some timer ->
-        String.concat [ timer#name ; "\n" ; timer#remaining_str ]
+    let timer =
+      timer_cycle#get
+          (fun timer ->
+             match timer#of_type with
+           | Pomodoro -> current_task ~default:()
+                           (fun task -> task#record_pomodoro)
+           | _ -> ()
+        )
     in
-    current_task ~default:"Finished" timer_of_current_task
+    String.concat [ timer#name ; "\n" ; timer#remaining_str ]
   in
   let task_summary () =
     current_task ~default:"" (fun ptask -> ptask#long_summary)
@@ -148,12 +154,6 @@ let add_pomodoro_timer ~ptasks (box:box) =
   (* Update displayed time on every tick *)
   (Lwt_engine.on_timer Param.tick true
      (fun _ ->
-        (* Make sure timer is in a consistent state *)
-        current_task ~default:()
-          (fun ct -> ct#current_timer ()
-                     |> Option.iter
-                       ~f:(fun ct -> ct#update_running_meanwhile));
-        (* Update display *)
         clock#set_text (remaining_time ());
         ptask#set_text (task_summary ());
      ))
@@ -161,7 +161,10 @@ let add_pomodoro_timer ~ptasks (box:box) =
 
   (* Record interruptions *)
   linter_btn#on_click
-    (fun () -> current_task ~default:() (fun t -> t#record_interruption ~long:true));
+    (fun () -> current_task ~default:()
+      (fun t ->
+        t#record_interruption ~long:true;
+        timer_cycle#map_current_timer (fun timer -> timer#reset)));
   sinter_btn#on_click
     (fun () -> current_task ~default:() (fun t -> t#record_interruption ~long:false));
 
@@ -209,7 +212,7 @@ let add_bottom_btn ~(main:vbox) ~(adj:scrollable) ~wakener display_done_task dis
 ;;
 
 (* Main view *)
-let mainv ~ptasks () =
+let mainv ~log () =
   let waiter, wakener = wait () in
   let main = new vbox in
   let display_done_task = ref false in
@@ -226,9 +229,9 @@ let mainv ~ptasks () =
     )
   in
 
-  add_pomodoro_timer ~ptasks main;
+  add_pomodoro_timer ~log main;
   main#add ~expand:false (new hline);
-  let ( _, _, adj) = add_scroll_task_list ~ptasks main display_task in
+  let ( _, _, adj) = add_scroll_task_list ~log main display_task in
   main#add ~expand:false (new hline);
   add_bottom_btn ~main ~adj ~wakener display_done_task display_today_only;
 

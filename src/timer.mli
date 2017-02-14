@@ -67,6 +67,17 @@ class timer :
     method update_running_meanwhile : unit
   end
 
-val empty_timer : unit -> timer option
-
 val on_finish : timer -> unit
+
+(* A cycling set of timers, like pomodro, break, pomodoro, break, pomodoro, long
+ * break *)
+class cycling : ?cycle:(of_timer list) -> log:(Log_f.read_log ref) ->
+  object ('a)
+    (* Return current timer. Cycles through timers and call final_call, as one finishes *)
+    method get : (timer -> unit) -> timer
+    (* Change current timer. May change a finished, which would be deleted as
+     * get method is called. *)
+    method map_current_timer : f:(timer -> timer) -> unit
+  end
+;;
+
