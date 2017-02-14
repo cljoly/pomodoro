@@ -103,7 +103,7 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
             task_list
         with
           exn ->
-            sprintf "Windows is likely to be too small.\n%s" (Exn.to_string exn)
+            sprintf "Window is likely to be too small.\n%s" (Exn.to_string exn)
       in
       let offset = scroll#offset in
       ptasks ()
