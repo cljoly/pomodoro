@@ -39,13 +39,10 @@ open Core.Std;;
 
 (* Simple log of pomodoros & tasks, with settings *)
 type settings_sexp = {
-  (* Defaults from pomodoro guide *)
   pomodoro_duration : float;
   short_break_duration : float;
   long_break_duration : float;
-  (* Command to play sound while pomodoro is running *)
   ticking_command : string;
-  (* Command to play sound when pomodoro is finished *)
   ringing_command : string;
   max_ring_duration : float sexp_option;
 } [@@deriving sexp]

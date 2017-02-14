@@ -165,7 +165,7 @@ let add_pomodoro_timer ~log (box:box) =
     (fun () -> current_task ~default:()
       (fun t ->
         t#record_interruption ~long:true;
-        timer_cycle#map_current_timer (fun timer -> timer#reset)));
+        timer_cycle#map_current_timer ~f:(fun timer -> timer#reset)));
   sinter_btn#on_click
     (fun () -> current_task ~default:() (fun t -> t#record_interruption ~long:false));
 

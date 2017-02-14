@@ -46,13 +46,13 @@ type status = Active | Done;;
  * sets the number and order of timers *)
 class ptask
     ?num (* Position in log file, useful to order tasks *)
-    ~name
-    ~description
     ?done_at
     ?number_of_pomodoro
     ?estimation
     ?interruption
     ?day
+    ~name
+    ~description
   =
   object(s:'s)
     val name : string Avl.t = new Avl.t name

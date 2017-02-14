@@ -41,13 +41,13 @@ type status = Active | Done
 
 class ptask :
   ?num:int ->
-  name:string ->
-  description:string ->
   ?done_at:string ->
   ?number_of_pomodoro:int ->
   ?estimation:int ->
   ?interruption:int ->
   ?day:Date.t ->
+  name:string ->
+  description:string ->
   object ('a)
     method description : string Avl.t
     method done_at : string option Avl.t
