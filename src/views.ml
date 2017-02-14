@@ -54,10 +54,10 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
     method! can_focus = false
 
     method! draw ctx _ =
+      let { rows ; cols } = LTerm_draw.size ctx in
       (* Return elements of list [l] between [top] (of the screen) and (top+row)
        * (corresponding to the last line of the screen) *)
       let select_task top l =
-        let { rows ; _ } = LTerm_draw.size ctx in
         let ll = List.length l in
         (* Reset offset to last line and redraw *)
         let reset_offset_redraw () =
@@ -73,32 +73,37 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
         (* Not at the end *)
         | l -> l
       in
-      (* Return a string creating a table of tasks, which may be too large *)
+      (* Return a string creating a table of tasks. Return a message for user if
+         the windows to small *)
       let draw_table_of_task (task_list: Tasks.ptask list) =
         let open Textutils.Ascii_table in
         (* String of option *)
         let soo f = Option.value_map ~default:"" ~f in
-        to_string ~bars:`Unicode ~display:Display.line
-          Column.[
-            create "Summary" ~align:Align.Right
-              (fun t -> t#short_summary)
-          ; create "Done" ~align:Align.Center
-              (fun t ->
-                 t#status#print_both (function Tasks.Done -> "X" | Active -> " "))
-          ; create "with" ~align:Align.Center
-              (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string))
-          ; create "at" ~align:Align.Center
-              (fun t -> t#done_at#print_both (soo String.to_string))
-          ; create "Short interruption" ~align:Align.Center
-              (fun t -> t#short_interruption#print_both (soo Int.to_string))
-          ; create "Long interruption" ~align:Align.Center
-              (fun t -> t#long_interruption#print_both (soo Int.to_string))
-          ; create "Estimation" ~align:Align.Center
-              (fun t -> t#estimation#print_both (soo Int.to_string))
-          ; create "Day" ~align:Align.Center
-              (fun t -> t#day#print_both (soo Date.to_string))
-          ]
-          task_list
+        try
+          to_string ~bars:`Unicode ~display:Display.line ~limit_width_to:cols
+            Column.[
+              create "Summary" ~align:Align.Right
+                (fun t -> t#short_summary)
+            ; create "Done" ~align:Align.Center
+                (fun t ->
+                   t#status#print_both (function Tasks.Done -> "X" | Active -> " "))
+            ; create "with" ~align:Align.Center
+                (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string))
+            ; create "at" ~align:Align.Center
+                (fun t -> t#done_at#print_both (soo String.to_string))
+            ; create "Short interruption" ~align:Align.Center
+                (fun t -> t#short_interruption#print_both (soo Int.to_string))
+            ; create "Long interruption" ~align:Align.Center
+                (fun t -> t#long_interruption#print_both (soo Int.to_string))
+            ; create "Estimation" ~align:Align.Center
+                (fun t -> t#estimation#print_both (soo Int.to_string))
+            ; create "Day" ~align:Align.Center
+                (fun t -> t#day#print_both (soo Date.to_string))
+            ]
+            task_list
+        with
+          exn ->
+            sprintf "Windows is likely to be too small.\n%s" (Exn.to_string exn)
       in
       let offset = scroll#offset in
       ptasks ()
