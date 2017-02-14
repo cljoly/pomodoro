@@ -89,8 +89,10 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
               (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string))
           ; create "at" ~align:Align.Center
               (fun t -> t#done_at#print_both (soo String.to_string))
-          ; create "Interruption" ~align:Align.Center
-              (fun t -> t#interruption#print_both (soo Int.to_string))
+          ; create "Short interruption" ~align:Align.Center
+              (fun t -> t#short_interruption#print_both (soo Int.to_string))
+          ; create "Long interruption" ~align:Align.Center
+              (fun t -> t#long_interruption#print_both (soo Int.to_string))
           ; create "Estimation" ~align:Align.Center
               (fun t -> t#estimation#print_both (soo Int.to_string))
           ; create "Day" ~align:Align.Center
@@ -127,16 +129,17 @@ let add_pomodoro_timer ~log (box:box) =
     new Timer.cycling ~log
       ?cycle:None
   in
+  let mark_pomodoro_done = (fun timer ->
+      match timer#of_type with
+      | Timer.Pomodoro -> current_task ~default:()
+                      (fun task -> task#record_pomodoro)
+      | _ -> ()
+    )
+  in
   (* Allow to get remaining time *)
   let remaining_time () =
     let timer =
-      timer_cycle#get
-          (fun timer ->
-             match timer#of_type with
-           | Pomodoro -> current_task ~default:()
-                           (fun task -> task#record_pomodoro)
-           | _ -> ()
-        )
+      timer_cycle#get mark_pomodoro_done
     in
     String.concat [ timer#name ; "\n" ; timer#remaining_str ]
   in
@@ -164,10 +167,10 @@ let add_pomodoro_timer ~log (box:box) =
   linter_btn#on_click
     (fun () -> current_task ~default:()
       (fun t ->
-        t#record_interruption ~long:true;
+        t#record_long_interruption;
         timer_cycle#map_current_timer ~f:(fun timer -> timer#reset)));
   sinter_btn#on_click
-    (fun () -> current_task ~default:() (fun t -> t#record_interruption ~long:false));
+    (fun () -> current_task ~default:() (fun t -> t#record_short_interruption));
 
   (* Mark task as finished when done button is pressed *)
   done_btn#on_click

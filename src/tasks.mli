@@ -44,7 +44,8 @@ class ptask :
   ?done_at:string ->
   ?number_of_pomodoro:int ->
   ?estimation:int ->
-  ?interruption:int ->
+  ?short_interruption:int ->
+  ?long_interruption:int ->
   ?day:Date.t ->
   name:string ->
   description:string ->
@@ -52,11 +53,16 @@ class ptask :
     method description : string Avl.t
     method done_at : string option Avl.t
     method estimation : int option Avl.t
-    method interruption : int option Avl.t
     method day : Date.t option Avl.t
     method id : int
 
-    method record_interruption : long:bool -> unit
+    method short_interruption : int option Avl.t
+    method record_short_interruption : unit
+
+    method long_interruption : int option Avl.t
+    (* XXX The type used here is a bit tricky, we mean Timer.timer actually but
+    this leads to circular build dependancies *)
+    method record_long_interruption : unit
 
     method is_done : bool
     method long_summary : string

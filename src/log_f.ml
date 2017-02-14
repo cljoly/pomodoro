@@ -53,7 +53,8 @@ type task_sexp = {
   done_with : int sexp_option; (* Number of pomodoro used *)
   (* Write down an estimation of the number of needed pomodoro *)
   estimation : int sexp_option;
-  interruption : int sexp_option; (* Track interruptions *)
+  short_interruption : int sexp_option; (* Track short interruptions *)
+  long_interruption : int sexp_option; (* Track long interruptions *)
   day : Date.t sexp_option (* The day you plan to do the task *)
 } [@@deriving sexp]
 type log = {
@@ -88,7 +89,8 @@ let read_log filename =
               ?done_at:task_sexp.done_at
               ?number_of_pomodoro:task_sexp.done_with
               ?estimation:task_sexp.estimation
-              ?interruption:task_sexp.interruption
+              ?short_interruption:task_sexp.short_interruption
+              ?long_interruption:task_sexp.long_interruption
               ?day:task_sexp.day
           );
   }

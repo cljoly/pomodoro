@@ -49,7 +49,8 @@ class ptask
     ?done_at
     ?number_of_pomodoro
     ?estimation
-    ?interruption
+    ?short_interruption
+    ?long_interruption
     ?day
     ~name
     ~description
@@ -84,12 +85,21 @@ class ptask
          |> (fun nop -> nop + 1)
          |> Option.some);
 
-    val interruption : int option Avl.t = new Avl.t interruption
-    method interruption = interruption
-    (* Record an interruption which reset timer if its too long *)
-    method record_interruption ~(long:bool) =
-      interruption#set
-        (Some (Option.value_map ~default:(0+1) ~f:succ interruption#get));
+    val short_interruption : int option Avl.t = new Avl.t short_interruption
+    method short_interruption = short_interruption
+    (* Record a short interruption *)
+    method record_short_interruption =
+      short_interruption#set
+        (Some (Option.value_map ~default:(0+1) ~f:succ short_interruption#get));
+
+
+    val long_interruption : int option Avl.t = new Avl.t long_interruption
+    method long_interruption = long_interruption
+    (* Record an interruption. Timer should be reset since it is a long
+    interruption *)
+    method record_long_interruption =
+      long_interruption#set
+        (Some (Option.value_map ~default:(0+1) ~f:succ long_interruption#get));
 
     val day : Date.t option Avl.t = new Avl.t day
     method day = day
@@ -113,9 +123,11 @@ class ptask
         sprintf "with %s pomodoro" (number_of_pomodoro#print_both
                                       (Option.value_map ~f:Int.to_string ~default:"0"))
       in
-      let interruption =
-        sprintf "interrruption: %s"
-          (interruption#print_both
+      let interruptions =
+        sprintf "short interruption: %s; long interruption: %s"
+          (short_interruption#print_both
+             (Option.value_map ~default:"0" ~f:Int.to_string))
+          (long_interruption#print_both
              (Option.value_map ~default:"0" ~f:Int.to_string))
       in
       let estimation =
@@ -128,7 +140,7 @@ class ptask
         Some short_summary
       ; (some_if long done_at)
       ; (some_if long nb)
-      ; (some_if long interruption)
+      ; (some_if long interruptions)
       ; (some_if long estimation)
       ] |> List.filter_map ~f:(fun a -> a)
       |> String.concat ~sep:", "
@@ -159,7 +171,8 @@ class ptask
         num = num#update_log another#num#get |> update_actual;
         number_of_pomodoro = number_of_pomodoro#update_log another#number_of_pomodoro#get;
         done_at = done_at#update_log another#done_at#get;
-        interruption = interruption#update_log another#interruption#get;
+        short_interruption = short_interruption#update_log another#short_interruption#get;
+        long_interruption = long_interruption#update_log another#long_interruption#get;
         day = day#update_log another#day#get |> update_actual;
         estimation = estimation#update_log another#estimation#get;
       >}
