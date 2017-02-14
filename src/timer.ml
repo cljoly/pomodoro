@@ -119,7 +119,7 @@ class timer duration of_type ~on_finish name running_meanwhile ?max_done_duratio
      * instanciation *)
     val mutable running_meanwhile = run_meanwhile ()
     (* Stop and keep running when necessary *)
-    method update_running_meanwhile =
+    method ensure_consistency =
       let make_sure_its_running () =
         running_meanwhile#state
         |> function | Lwt_process.Running -> ()
@@ -185,8 +185,10 @@ class cycling ?cycle ~log =
         final_call current_timer;
         s#next_position
       end;
+      current_timer#ensure_consistency;
       current_timer
     method map_current_timer ~f =
-      current_timer <- f current_timer
+      current_timer <- f current_timer;
+      current_timer#ensure_consistency;
   end
 ;;

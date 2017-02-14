@@ -65,7 +65,7 @@ class timer :
     method remaining : Ts.t option
     method remaining_str : string
     method run_done : unit
-    method update_running_meanwhile : unit
+    method ensure_consistency : unit
   end
 
 val on_finish : timer -> unit
