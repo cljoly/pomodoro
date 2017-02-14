@@ -116,6 +116,6 @@ let reread_log r_log =
           |> Option.value ~default:new_task
         )
   in
-  (* Erase old settings TODO merge old and new *)
+  (* Erase old settings *)
   { fname ; ptasks ; settings = new_log.settings }
 ;;
