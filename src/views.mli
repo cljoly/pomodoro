@@ -31,8 +31,6 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-B license and that you accept its terms.
 
-Inspired by example of lambda-term library, (c) 2011, Jeremie Dimino <jeremie@dimino.org>
-
 *)
 
 open Core.Std;;
