@@ -86,7 +86,8 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
                 (fun t -> t#short_summary)
             ; create "Done" ~align:Align.Center
                 (fun t ->
-                   t#status#print_both (function Tasks.Done -> "X" | Active -> " "))
+                   t#status#print_both
+                     (function Tasks.Done -> "X" | Tasks.Active -> " "))
             ; create "with" ~align:Align.Center
                 (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string))
             ; create "at" ~align:Align.Center
