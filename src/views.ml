@@ -123,7 +123,7 @@ let add_pomodoro_timer ~ptasks (box:box) =
     Tasks.get_pending !ptasks.Log_f.log
     |> Option.value_map ~f ~default
   in
-  (* Allow to get remainging time for current ptask, if any one is yet active *)
+  (* Allow to get remaining time for current ptask, if any one is yet active *)
   let remaining_time () =
     let rec timer_of_current_task ptask =
       match ptask#current_timer () with
@@ -145,7 +145,7 @@ let add_pomodoro_timer ~ptasks (box:box) =
   let sinter_btn = new button "Short interruption" in
   let done_btn = new button "Done" in
 
-  (* Update the time on every tick *)
+  (* Update displayed time on every tick *)
   (Lwt_engine.on_timer Param.tick true
      (fun _ ->
         (* Make sure timer is in a consistent state *)

@@ -1,4 +1,4 @@
-PKG core core lwt lambda-term
+PKG core core lwt lambda-term textutils
 
 S src/*
 
