@@ -96,7 +96,7 @@ class ptask
     val long_interruption : int option Avl.t = new Avl.t long_interruption
     method long_interruption = long_interruption
     (* Record an interruption. Timer should be reset since it is a long
-    interruption *)
+       interruption *)
     method record_long_interruption =
       long_interruption#set
         (Some (Option.value_map ~default:(0+1) ~f:succ long_interruption#get));

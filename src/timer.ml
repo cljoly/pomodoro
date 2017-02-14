@@ -47,9 +47,9 @@ type of_timer =
 (* Return durations associated in log file for each type of timer *)
 let durations_and_name log =
   function
-    | Pomodoro -> (log.Log_f.settings.pomodoro_duration, "Pomodoro")
-    | Short_break -> (log.Log_f.settings.short_break_duration, "Short break")
-    | Long_break -> (log.Log_f.settings.long_break_duration, "Long break")
+  | Pomodoro -> (log.Log_f.settings.pomodoro_duration, "Pomodoro")
+  | Short_break -> (log.Log_f.settings.short_break_duration, "Short break")
+  | Long_break -> (log.Log_f.settings.long_break_duration, "Long break")
 ;;
 
 (* When a timer is finished, notify *)

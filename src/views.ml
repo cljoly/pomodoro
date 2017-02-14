@@ -104,7 +104,7 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
             task_list
         with
           exn ->
-            sprintf "Window is likely to be too small.\n%s" (Exn.to_string exn)
+          sprintf "Window is likely to be too small.\n%s" (Exn.to_string exn)
       in
       let offset = scroll#offset in
       ptasks ()
@@ -138,7 +138,7 @@ let add_pomodoro_timer ~log (box:box) =
   let mark_pomodoro_done = (fun timer ->
       match timer#of_type with
       | Timer.Pomodoro -> current_task ~default:()
-                      (fun task -> task#record_pomodoro)
+                            (fun task -> task#record_pomodoro)
       | _ -> ()
     )
   in
@@ -172,9 +172,9 @@ let add_pomodoro_timer ~log (box:box) =
   (* Record interruptions *)
   linter_btn#on_click
     (fun () -> current_task ~default:()
-      (fun t ->
-        t#record_long_interruption;
-        timer_cycle#map_current_timer ~f:(fun timer -> timer#reset)));
+        (fun t ->
+           t#record_long_interruption;
+           timer_cycle#map_current_timer ~f:(fun timer -> timer#reset)));
   sinter_btn#on_click
     (fun () -> current_task ~default:() (fun t -> t#record_short_interruption));
 
