@@ -205,7 +205,10 @@ let add_bottom_btn
   let current_day_label = new label "" in
   let set_day_to target_date =
     current_day := target_date;
-    Date.to_string !current_day |> current_day_label#set_text in
+    Date.to_string !current_day
+    |> sprintf "Current day: %s"
+    |> current_day_label#set_text
+  in
   set_day_to !current_day;
   (* Show only todays task for the current day *)
   let toggle_day_btn = new button "Filter by day" in
