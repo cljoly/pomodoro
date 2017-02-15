@@ -192,7 +192,38 @@ let add_pomodoro_timer ~log (box:box) =
 ;;
 
 (* Add buttons, in an horizontal box *)
-let add_bottom_btn ~(main:vbox) ~(adj:scrollable) ~wakener display_done_task display_today_only=
+let add_bottom_btn
+    ~(main:vbox)
+    ~(adj:scrollable)
+    ~wakener
+    display_done_task
+    display_only_day
+    current_day
+  =
+  let day_hbox = new hbox in
+  let current_day_label = new label "" in
+  let update_day_label () = Date.to_string !current_day |> current_day_label#set_text in
+  update_day_label ();
+  (* Show only todays task for the current day *)
+  let toggle_day_btn = new button "Filter by day" in
+  toggle_day_btn#on_click (fun () -> display_only_day := not !display_only_day);
+  let last_day_btn = new button "Last day" in
+  last_day_btn#on_click (fun () ->
+      current_day := Date.add_days !current_day (-1);
+      update_day_label ();
+    );
+  let next_day_btn = new button "Next day" in
+  next_day_btn#on_click (fun () ->
+      current_day := Date.add_days !current_day 1;
+      update_day_label ();
+    );
+
+  day_hbox#add ~expand:true current_day_label;
+  day_hbox#add ~expand:true toggle_day_btn;
+  day_hbox#add ~expand:true last_day_btn;
+  day_hbox#add ~expand:true next_day_btn;
+  main#add ~expand:false day_hbox;
+
   let hbox = new hbox in
   (* Scroll down *)
   let down_btn = new button "Down" in
@@ -204,19 +235,12 @@ let add_bottom_btn ~(main:vbox) ~(adj:scrollable) ~wakener display_done_task dis
   let toggle_done_btn = new button "Toggle done" in
   toggle_done_btn#on_click (fun () ->
       display_done_task := not !display_done_task;);
-  (* Show only todays task or not *)
-  let toggle_today_btn =
-    new button Date.(today ~zone:Core.Zone.local |> to_string |> sprintf "Toggle today (%s)")
-  in
-  toggle_today_btn#on_click (fun () ->
-      display_today_only := not !display_today_only;);
   let exit_btn = new button "Exit" in
   exit_btn#on_click (fun () -> wakeup wakener ());
 
   hbox#add ~expand:true down_btn;
   hbox#add ~expand:true up_btn;
   hbox#add ~expand:true toggle_done_btn;
-  hbox#add ~expand:true toggle_today_btn;
   hbox#add ~expand:true exit_btn;
   main#add ~expand:false hbox;
 ;;
@@ -226,16 +250,18 @@ let mainv ~log () =
   let waiter, wakener = wait () in
   let main = new vbox in
   let display_done_task = ref false in
-  let display_today_only = ref false in
+  let display_only_day = ref false in
+  (* Day for which tasks are considered *)
+  let current_day = ref (Date.today ~zone:Core.Zone.local) in
 
   (* Whether a task should be displayed or not, on done and date criteria *)
   let display_task task =
     (!display_done_task || not task#is_done)
     &&
-    (not !display_today_only ||
+    (not !display_only_day ||
      Option.value_map ~default:false task#day#get
        ~f:(fun day ->
-           Date.equal (Date.today ~zone:Core.Zone.local) day)
+           Date.equal !current_day day)
     )
   in
 
@@ -243,7 +269,7 @@ let mainv ~log () =
   main#add ~expand:false (new hline);
   let ( _, _, adj) = add_scroll_task_list ~log main display_task in
   main#add ~expand:false (new hline);
-  add_bottom_btn ~main ~adj ~wakener display_done_task display_today_only;
+  add_bottom_btn ~main ~adj ~wakener display_done_task display_only_day current_day;
 
   Lazy.force LTerm.stdout >>= fun term ->
   LTerm.enable_mouse term >>= fun () ->
