@@ -68,7 +68,10 @@ class ptask
     val done_at = new Avl.t done_at
     method done_at = done_at
     method mark_done =
-      done_at#set T.(now () |> to_string |> Option.some);
+      done_at#set
+        T.(now ()
+           |> to_string_abs ~zone:Core.Zone.local
+           |> Option.some);
       status#set Done
     method status = status
     method is_done =
