@@ -196,6 +196,7 @@ let add_bottom_btn
     ~(main:vbox)
     ~(adj:scrollable)
     ~wakener
+    ~log
     display_done_task
     display_only_day
     current_day
@@ -217,11 +218,47 @@ let add_bottom_btn
   next_day_btn#on_click (fun () ->
       Date.add_days !current_day 1 |> set_day_to
     );
+  let list_of_date () =
+    List.filter_map !log.Log_f.ptasks ~f:(fun ptask -> ptask#day#get)
+    |> List.sort ~cmp:Date.compare
+  in
+  let last_day_in_list () =
+    list_of_date ()
+    |> List.partition_map
+      ~f:(fun date ->
+          let open Date in
+          if date <= !current_day
+          then `Fst date
+          else `Snd date
+        )
+    |> (fun (lower_than_current_day, _) -> List.hd lower_than_current_day)
+    |> Option.iter ~f:set_day_to
+  in
+  let next_day_in_list () =
+    list_of_date ()
+    |> List.partition_map
+      ~f:(fun date ->
+          let open Date in
+          if date > !current_day
+          then `Fst date
+          else `Snd date
+        )
+    |> (fun (lower_than_current_day, _) -> List.hd lower_than_current_day)
+    |> Option.iter ~f:set_day_to
+  in
+  (* Last day present in a task of the log file *)
+  let last_log_day_btn = new button "Last log day" in
+  last_log_day_btn#on_click last_day_in_list;
+  (* Next day present in a task of the log file *)
+  let next_log_day_btn = new button "Next log day" in
+  next_log_day_btn#on_click next_day_in_list;
 
   day_hbox#add ~expand:true current_day_label;
   day_hbox#add ~expand:true toggle_day_btn;
   day_hbox#add ~expand:true last_day_btn;
   day_hbox#add ~expand:true next_day_btn;
+  day_hbox#add ~expand:true last_log_day_btn;
+  day_hbox#add ~expand:true next_log_day_btn;
   main#add ~expand:false day_hbox;
 
   let hbox = new hbox in
@@ -269,7 +306,7 @@ let mainv ~log () =
   main#add ~expand:false (new hline);
   let ( _, _, adj) = add_scroll_task_list ~log main display_task in
   main#add ~expand:false (new hline);
-  add_bottom_btn ~main ~adj ~wakener display_done_task display_only_day current_day;
+  add_bottom_btn ~main ~adj ~wakener ~log display_done_task display_only_day current_day;
 
   Lazy.force LTerm.stdout >>= fun term ->
   LTerm.enable_mouse term >>= fun () ->
