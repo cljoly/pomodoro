@@ -202,20 +202,20 @@ let add_bottom_btn
   =
   let day_hbox = new hbox in
   let current_day_label = new label "" in
-  let update_day_label () = Date.to_string !current_day |> current_day_label#set_text in
-  update_day_label ();
+  let set_day_to target_date =
+    current_day := target_date;
+    Date.to_string !current_day |> current_day_label#set_text in
+  set_day_to !current_day;
   (* Show only todays task for the current day *)
   let toggle_day_btn = new button "Filter by day" in
   toggle_day_btn#on_click (fun () -> display_only_day := not !display_only_day);
   let last_day_btn = new button "Last day" in
   last_day_btn#on_click (fun () ->
-      current_day := Date.add_days !current_day (-1);
-      update_day_label ();
+      Date.add_days !current_day (-1) |> set_day_to
     );
   let next_day_btn = new button "Next day" in
   next_day_btn#on_click (fun () ->
-      current_day := Date.add_days !current_day 1;
-      update_day_label ();
+      Date.add_days !current_day 1 |> set_day_to
     );
 
   day_hbox#add ~expand:true current_day_label;
