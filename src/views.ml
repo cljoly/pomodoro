@@ -221,32 +221,35 @@ let add_bottom_btn
   next_day_btn#on_click (fun () ->
       Date.add_days !current_day 1 |> set_day_to
     );
-  let list_of_date () =
+  (* Get the date in log file which is the narrowest before or after
+  current_day, if any *)
+  let get_narrowest before_or_after =
+    let right_order a b =
+      match before_or_after with
+      | `After -> Date.( a < b)
+      | `Before -> Date.( b < a)
+    in
     List.filter_map !log.Log_f.ptasks ~f:(fun ptask -> ptask#day#get)
-    |> List.sort ~cmp:Date.compare
+    |> List.fold ~init:None ~f:(fun best_found candidate ->
+        if right_order !current_day candidate
+        then
+          (match best_found with
+           | None -> candidate
+           | Some lf ->
+             if right_order candidate lf
+             then candidate
+             else lf
+          )
+          |> Option.some
+        else best_found
+      )
   in
   let last_day_in_list () =
-    list_of_date ()
-    |> List.partition_map
-      ~f:(fun date ->
-          let open Date in
-          if date <= !current_day
-          then `Fst date
-          else `Snd date
-        )
-    |> (fun (lower_than_current_day, _) -> List.hd lower_than_current_day)
+    get_narrowest `Before
     |> Option.iter ~f:set_day_to
   in
   let next_day_in_list () =
-    list_of_date ()
-    |> List.partition_map
-      ~f:(fun date ->
-          let open Date in
-          if date > !current_day
-          then `Fst date
-          else `Snd date
-        )
-    |> (fun (lower_than_current_day, _) -> List.hd lower_than_current_day)
+    get_narrowest `After
     |> Option.iter ~f:set_day_to
   in
   (* Last day present in a task of the log file *)
