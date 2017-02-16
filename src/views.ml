@@ -224,23 +224,22 @@ let add_bottom_btn
   (* Get the date in log file which is the narrowest before or after
   current_day, if any *)
   let get_narrowest before_or_after =
-    let right_order a b =
+    let right_order a b c_option =
+      let open Date in
       match before_or_after with
-      | `After -> Date.( a < b)
-      | `Before -> Date.( b < a)
+      | `After -> (* We want a < b < c *)
+        a < b
+        && (Option.is_none c_option
+            || Option.value_exn c_option |> (fun c -> b < c))
+      | `Before -> (* We want c < b < a *)
+        a > b
+        && (Option.is_none c_option
+            || Option.value_exn c_option |> (fun c -> b > c))
     in
     List.filter_map !log.Log_f.ptasks ~f:(fun ptask -> ptask#day#get)
     |> List.fold ~init:None ~f:(fun best_found candidate ->
-        if right_order !current_day candidate
-        then
-          (match best_found with
-           | None -> candidate
-           | Some lf ->
-             if right_order candidate lf
-             then candidate
-             else lf
-          )
-          |> Option.some
+        if right_order !current_day candidate best_found
+        then Some candidate
         else best_found
       )
   in
