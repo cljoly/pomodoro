@@ -119,3 +119,4 @@ let reread_log r_log =
   (* Erase old settings *)
   { fname ; ptasks ; settings = new_log.settings }
 ;;
+

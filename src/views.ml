@@ -221,34 +221,28 @@ let add_bottom_btn
   next_day_btn#on_click (fun () ->
       Date.add_days !current_day 1 |> set_day_to
     );
-  (* Get the date in log file which is the narrowest before or after
-  current_day, if any *)
-  let get_narrowest before_or_after =
-    let right_order a b c_option =
-      let open Date in
-      match before_or_after with
-      | `After -> (* We want a < b < c *)
-        a < b
-        && (Option.is_none c_option
-            || Option.value_exn c_option |> (fun c -> b < c))
-      | `Before -> (* We want c < b < a *)
-        a > b
-        && (Option.is_none c_option
-            || Option.value_exn c_option |> (fun c -> b > c))
+  let ordered_day_in_log () =
+    let get_date_and_not_current (ptask:Tasks.ptask) =
+      Option.bind ptask#day#get
+        (fun date ->
+           Option.some_if (not (Date.equal !current_day date)) date)
     in
-    List.filter_map !log.Log_f.ptasks ~f:(fun ptask -> ptask#day#get)
-    |> List.fold ~init:None ~f:(fun best_found candidate ->
-        if right_order !current_day candidate best_found
-        then Some candidate
-        else best_found
-      )
+    let before_current_day, after_current_day =
+      List.filter_map !log.Log_f.ptasks ~f:get_date_and_not_current
+      |> List.dedup ~compare:Date.compare
+      |> List.partition_tf ~f:Date.(fun date -> date < !current_day )
+    in
+    let lazy_sort l = lazy (List.sort ~cmp:Date.compare l) in
+    ( lazy_sort before_current_day, lazy_sort after_current_day )
   in
   let last_day_in_list () =
-    get_narrowest `Before
+    ordered_day_in_log ()
+    |> (fun (before_current_day, _) -> Lazy.force before_current_day |> List.last)
     |> Option.iter ~f:set_day_to
   in
   let next_day_in_list () =
-    get_narrowest `After
+    ordered_day_in_log ()
+    |> (fun (_, after_current_day) -> Lazy.force after_current_day |> List.hd)
     |> Option.iter ~f:set_day_to
   in
   (* Last day present in a task of the log file *)
