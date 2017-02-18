@@ -198,62 +198,87 @@ let add_bottom_btn
     ~wakener
     ~log
     display_done_task
-    display_only_day
     current_day
+    no_day_filter
   =
   let day_hbox = new hbox in
-  let current_day_label = new label "" in
+  let no_dfilter_btn = new button "" in
+  let update_on_dfilter_btn () =
+    match !no_day_filter with
+    | true -> no_dfilter_btn#set_label "No active day filter"
+    | false -> no_dfilter_btn#set_label "Filtering task on day basis"
+  in
+  update_on_dfilter_btn ();
+  no_dfilter_btn#on_click (fun () ->
+      no_day_filter := not !no_day_filter;
+      update_on_dfilter_btn ();
+    );
+  (* Cycle throw view of current_day task or view of task without day parameter *)
+  let current_day_btn = new button "Filter by day" in
   let set_day_to target_date =
     current_day := target_date;
-    Date.to_string !current_day
-    |> sprintf "Current day: %s"
-    |> current_day_label#set_text
+    match !current_day with
+    | Some date ->
+      Date.to_string date
+      |> sprintf "Current day: %s"
+      |> current_day_btn#set_label
+    | None -> current_day_btn#set_label "No current day"
   in
   set_day_to !current_day;
-  (* Show only todays task for the current day *)
-  let toggle_day_btn = new button "Filter by day" in
-  toggle_day_btn#on_click (fun () -> display_only_day := not !display_only_day);
+  let current_day_or_today () =
+    Option.value ~default:(Date.today ~zone:Core.Zone.local) !current_day
+  in
+  current_day_btn#on_click (fun () -> (* Cycle through views *)
+      match !current_day with
+      | Some _ -> set_day_to None
+      | None -> set_day_to (Some (current_day_or_today ()))
+    );
+  let move_current_day by =
+    current_day_or_today ()
+    |> (fun current_day ->
+        Date.add_days current_day by |> Option.some |> set_day_to)
+  in
   let last_day_btn = new button "Last day" in
-  last_day_btn#on_click (fun () ->
-      Date.add_days !current_day (-1) |> set_day_to
-    );
+  last_day_btn#on_click (fun () -> move_current_day (-1));
   let next_day_btn = new button "Next day" in
-  next_day_btn#on_click (fun () ->
-      Date.add_days !current_day 1 |> set_day_to
-    );
+  next_day_btn#on_click (fun () -> move_current_day 1);
   let ordered_day_in_log () =
+    let current_day = current_day_or_today () in
     let get_date_and_not_current (ptask:Tasks.ptask) =
+      let current_day = current_day_or_today () in
       Option.bind ptask#day#get
         (fun date ->
-           Option.some_if (not (Date.equal !current_day date)) date)
+           Option.some_if (not (Date.equal current_day date)) date)
     in
     let before_current_day, after_current_day =
       List.filter_map !log.Log_f.ptasks ~f:get_date_and_not_current
       |> List.dedup ~compare:Date.compare
-      |> List.partition_tf ~f:Date.(fun date -> date < !current_day )
+      |> List.partition_tf ~f:Date.(fun date -> date < current_day )
     in
     let lazy_sort l = lazy (List.sort ~cmp:Date.compare l) in
     ( lazy_sort before_current_day, lazy_sort after_current_day )
   in
-  let last_day_in_list () =
+  let set_date_in_log f =
     ordered_day_in_log ()
-    |> (fun (before_current_day, _) -> Lazy.force before_current_day |> List.last)
-    |> Option.iter ~f:set_day_to
-  in
-  let next_day_in_list () =
-    ordered_day_in_log ()
-    |> (fun (_, after_current_day) -> Lazy.force after_current_day |> List.hd)
-    |> Option.iter ~f:set_day_to
+    |> f
+    |> Option.iter ~f:(fun date -> set_day_to (Some date))
   in
   (* Last day present in a task of the log file *)
   let last_log_day_btn = new button "Last log day" in
-  last_log_day_btn#on_click last_day_in_list;
+  last_log_day_btn#on_click
+    (fun () ->
+       set_date_in_log (fun (before_current_day, _) ->
+         Lazy.force before_current_day |> List.last)
+    );
   (* Next day present in a task of the log file *)
   let next_log_day_btn = new button "Next log day" in
-  next_log_day_btn#on_click next_day_in_list;
+  next_log_day_btn#on_click
+    (fun () ->
+       set_date_in_log (fun (_, after_current_day) -> Lazy.force after_current_day |> List.hd)
+    );
 
-  day_hbox#add ~expand:true current_day_label;
-  day_hbox#add ~expand:true toggle_day_btn;
+  day_hbox#add ~expand:true no_dfilter_btn;
+  day_hbox#add ~expand:true current_day_btn;
   day_hbox#add ~expand:true last_day_btn;
   day_hbox#add ~expand:true next_day_btn;
   day_hbox#add ~expand:true last_log_day_btn;
@@ -286,26 +311,28 @@ let mainv ~log () =
   let waiter, wakener = wait () in
   let main = new vbox in
   let display_done_task = ref false in
-  let display_only_day = ref false in
+  let no_day_filter = ref true in
   (* Day for which tasks are considered *)
-  let current_day = ref (Date.today ~zone:Core.Zone.local) in
+  let current_day = ref (Some (Date.today ~zone:Core.Zone.local)) in
 
   (* Whether a task should be displayed or not, on done and date criteria *)
   let display_task task =
+    let is_coherent_with_current_day () =
+      match !current_day with
+      | Some day ->
+        Option.value_map ~default:false task#day#get ~f:(Date.equal day)
+      | None -> Option.is_none task#day#get
+    in
     (!display_done_task || not task#is_done)
     &&
-    (not !display_only_day ||
-     Option.value_map ~default:false task#day#get
-       ~f:(fun day ->
-           Date.equal !current_day day)
-    )
+    (!no_day_filter || is_coherent_with_current_day ())
   in
 
   add_pomodoro_timer ~log main;
   main#add ~expand:false (new hline);
   let ( _, _, adj) = add_scroll_task_list ~log main display_task in
   main#add ~expand:false (new hline);
-  add_bottom_btn ~main ~adj ~wakener ~log display_done_task display_only_day current_day;
+  add_bottom_btn ~main ~adj ~wakener ~log display_done_task current_day no_day_filter;
 
   Lazy.force LTerm.stdout >>= fun term ->
   LTerm.enable_mouse term >>= fun () ->
