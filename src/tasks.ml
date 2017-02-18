@@ -114,7 +114,7 @@ class ptask
 
     (* Returns a summary of the task, short or with more details *)
     method private summary ~long =
-      let short_summary = sprintf "%s: \"%s\""
+      let short_summary = sprintf "%s: %s"
           (name#print_both String.of_string)
           (description#print_both String.of_string)
       in
