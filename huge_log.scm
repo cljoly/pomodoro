@@ -1,12 +1,33 @@
 (
- (settings(
-  (pomodoro_duration 0.2)
-  (short_break_duration 0.1)
-  (long_break_duration 0.15)
-  (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
-  (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null")
- ))
- (tasks(
+ (settings
+  (
+   ((sort Pomodoro) (duration 0.15)
+    (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+    (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+   ((sort Short_break) (duration 0.1)
+    (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+    (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+   ((sort Pomodoro) (duration 25)
+    (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+    (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+   ((sort Short_break) (duration 5)
+    (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+    (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+   ((sort Pomodoro) (duration 25)
+    (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+    (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+   ((sort Short_break) (duration 5)
+    (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+    (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+   ((sort Pomodoro) (duration 25)
+    (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+    (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+   ((sort Long_break) (duration 30)
+    (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+    (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+   ))
+ (tasks
+  (
    ((name "Task 1") (description "") (done_at "2016-09-10T16:06:41") (done_with 5) (day "2/3/16"))
    ((name "Task 2") (description "") (day "2/3/17"))
    ((name "Task 3") (description "") (done_at "2016-09-10T16:06:41") (done_with 5) (day "2/3/18"))
@@ -809,6 +830,6 @@
    ((name "Task 800") (description "") (day "1/7/65"))
    ((name "Task 801") (description "") (done_at "2016-09-10T16:06:41") (done_with 5) (day "9/11/35"))
    ((name "Task 802") (description "") (day "4/17/63"))
- ))
-)
+   ))
+ )
 

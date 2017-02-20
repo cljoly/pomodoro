@@ -35,17 +35,24 @@ knowledge of the CeCILL-B license and that you accept its terms.
 
 open Core.Std;;
 
-type settings_sexp = {
-  (* Defaults from pomodoro guide *)
-  pomodoro_duration : float;
-  short_break_duration : float;
-  long_break_duration : float;
+type sort_of_timer =
+  | Pomodoro
+  | Short_break
+  | Long_break
+;;
+
+type timer_sexp = {
+  sort : sort_of_timer;
+  duration : float;
   (* Command to play sound while pomodoro is running *)
   ticking_command : string;
-  (* Command to play sound when pomodoro is finished *)
+  (* Command to a play sound when pomodoro is finished *)
   ringing_command : string;
   (* Maximum time the ringing command is allowed to run *)
-  max_ring_duration : float sexp_option;
+  max_ring_duration : float;
+}
+type settings_sexp = {
+  timer_cycle : timer_sexp sexp_list
 }
 type read_log = {
     fname : string;

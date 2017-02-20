@@ -5,11 +5,40 @@ Contains a model for your task and a mini-tutorial to get started.
 (
  (settings
   (
-   (pomodoro_duration 25)
-   (short_break_duration 5)
-   (long_break_duration 20)
-   (ticking_command "")
-   (ringing_command "")
+   (timer_cycle
+    (
+     #|
+     We are using a command line player to play the ticking sound of a pomodoro
+     and to make it ring.
+     If you do not want to install ogg123, you may use vlc, as follow:
+     "cvlc --no-loop ~/bell_sound.oga vlc://quit &>/dev/null"
+     |#
+     ((sort Pomodoro) (duration 25)
+      (ticking_command "ogg123 ~/bell_sound.oga &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.oga &>/dev/null"))
+     ((sort Short_break) (duration 5)
+      (ticking_command "ogg123 ~/bell_sound.oga &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.oga &>/dev/null"))
+     ((sort Pomodoro) (duration 25)
+      (ticking_command "ogg123 ~/bell_sound.oga &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.oga &>/dev/null"))
+     ((sort Short_break) (duration 5)
+      (ticking_command "ogg123 ~/bell_sound.oga &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.oga &>/dev/null"))
+     ((sort Pomodoro) (duration 25)
+      (ticking_command "ogg123 ~/bell_sound.oga &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.oga &>/dev/null"))
+     ((sort Short_break) (duration 5)
+      (ticking_command "ogg123 ~/bell_sound.oga &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.oga &>/dev/null"))
+     ((sort Pomodoro) (duration 25)
+      (ticking_command "ogg123 ~/bell_sound.oga &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.oga &>/dev/null"))
+     ((sort Long_break) (duration 30)
+      (ticking_command "ogg123 ~/bell_sound.oga &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.oga &>/dev/null"))
+     )
+    )
    )
   )
  (tasks
@@ -17,15 +46,13 @@ Contains a model for your task and a mini-tutorial to get started.
 
    #|
    The following task is a model. Feel free to copy-paste it for your own task!
-   As you may know, the #; comment the first s-expression that follow. You could
-   use it to comment a task easily.
    |#
    #;
    ((name "Task name") (description "Task description")
-    (done_at "2016-09-10T15:42:38") (done_with 5)
-    (estimation 3) (short_interruption 2) (long_interruption 4)
-    (day 2018/06/06)
-    )
+   (done_at "2016-09-10T15:42:38") (done_with 5)
+   (estimation 3) (short_interruption 2) (long_interruption 4)
+   (day 2018/06/06)
+   )
 
    ((name "Welcome to your new productivity assistant") (description "it helps you to be more efficient.") (day 1/1/3000))
    ((name "It uses the well known Pomodoro technique, the light way") (description "let's take a quick tour!") (day 1/1/3000))

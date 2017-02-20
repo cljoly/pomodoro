@@ -40,17 +40,6 @@ module Ts = Time.Span;;
 
 (* Timer related code *)
 
-(* Type of timer *)
-type of_timer =
-    Pomodoro | Short_break | Long_break
-;;
-(* Return durations associated in log file for each type of timer *)
-let durations_and_name log =
-  function
-  | Pomodoro -> (log.Log_f.settings.pomodoro_duration, "Pomodoro")
-  | Short_break -> (log.Log_f.settings.short_break_duration, "Short break")
-  | Long_break -> (log.Log_f.settings.long_break_duration, "Long break")
-;;
 
 (* When a timer is finished, notify *)
 let on_finish timer =
@@ -60,21 +49,34 @@ let on_finish timer =
   timer#run_done
 ;;
 
+let name_of_type = function
+  | Log_f.Pomodoro -> "Pomodoro"
+  | Short_break -> "Short break"
+  | Long_break -> "Long break"
+;;
+
 (* A timer of duration (in minute). The on_exit function is called the
  * first time the timer is finished *)
-class timer duration of_type ~on_finish name running_meanwhile ?max_done_duration running_when_done =
+class timer
+    Log_f.{ sort = type_of_timer
+          ; duration
+          ; ticking_command
+          ; ringing_command
+          ; max_ring_duration
+          }
+  =
   let run_meanwhile () =
-    Lwt_process.shell running_meanwhile
+    Lwt_process.shell ticking_command
     |> Lwt_process.open_process_none
   in
   object(s)
-    val name : string = name
+    val name = name_of_type type_of_timer
     method name = name
     val duration = Ts.of_min duration
     val start_time = T.now ()
     val mutable marked_finished = false
 
-    val of_type : of_timer = of_type
+    val of_type = type_of_timer
     method of_type = of_type
 
     method private call_on_finish_once =
@@ -109,7 +111,7 @@ class timer duration of_type ~on_finish name running_meanwhile ?max_done_duratio
     (* Do as if the timer would have start right now *)
     method reset =
       (* Only a Pomodoro timer may be interrupted *)
-      if s#of_type = Pomodoro
+      if s#of_type = Log_f.Pomodoro
       then
         {< start_time = T.now () >}
       else
@@ -130,56 +132,34 @@ class timer duration of_type ~on_finish name running_meanwhile ?max_done_duratio
       else make_sure_its_running ()
 
     (* Command to run when finish *)
-    val running_when_done = running_when_done
+    val running_when_done = ringing_command
     method run_done =
-      let timeout =
-        Option.value ~default:0.4 max_done_duration
-      in
       Lwt_process.shell running_when_done
-      |> Lwt_process.exec ~timeout
+      |> Lwt_process.exec ~timeout:max_ring_duration
       |> ignore
   end
 
 (* TODO Create a special object for timer that are elleapsed and that do nothing *)
 let empty_timer () =
-  new timer 0. Short_break ~on_finish:(fun _ -> ()) "Empty" "" ""
+  new timer
+    Log_f.{ sort = Short_break; duration = 0. ; ticking_command = ""
+    ; ringing_command = "" ; max_ring_duration = 0. }
 ;;
 
-class cycling ?cycle ~log =
-  (* Simplified instanciation of class timer *)
-  let simple_timer of_timer =
-    let ticking_command = !log.Log_f.settings.ticking_command in
-    let ringing_command = !log.Log_f.settings.ringing_command in
-    let (duration, name) = durations_and_name !log of_timer in
-    new timer duration of_timer
-      ~on_finish:on_finish
-      name
-      ticking_command
-      ringing_command
-      ?max_done_duration:!log.settings.max_ring_duration
-  in
-  (* We do 4 pomodoroes, with a short break between each, before taking a long
-   * break *)
-  let cycle = (* TODO Allow to configure this *)
-    Option.value cycle
-      ~default:[ Pomodoro ; Short_break
-               ; Pomodoro ; Short_break
-               ; Pomodoro ; Short_break
-               ; Pomodoro ; Long_break
-               ]
-  in
+class cycling ~log =
+  let cycle = !log.Log_f.settings.timer_cycle in
   (* lead to problem if cycle is empty, for instance with `position` instance variable *)
   let _ = assert (cycle <> []) in
   let cycle_length = List.length cycle in
   object (s:'s)
-    val cycle : of_timer list Avl.t = new Avl.t cycle
+    val cycle : Log_f.timer_sexp list Avl.t = new Avl.t cycle
     val cycle_length = cycle_length
     val mutable position = -1
     val mutable current_timer = empty_timer ()
     (* Circle through positions *)
     method private next_position =
       position <- (position + 1) mod cycle_length;
-      current_timer <- simple_timer (List.nth_exn cycle#get position)
+      current_timer <- new timer (List.nth_exn cycle#get position)
     method get final_call =
       if current_timer#is_finished then begin
         final_call current_timer;

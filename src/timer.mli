@@ -38,21 +38,12 @@ open Core.Std;;
 module T = Time;;
 module Ts = Time.Span;;
 
-type of_timer = Pomodoro | Short_break | Long_break
-
-class timer :
-  float ->
-  of_timer ->
-  on_finish:('a -> unit) ->
-  string ->
-  string ->
-  ?max_done_duration:float ->
-  string ->
+class timer : Log_f.timer_sexp ->
   object ('a)
     val duration : Ts.t
     val mutable marked_finished : bool
     val name : string
-    val of_type : of_timer
+    val of_type : Log_f.sort_of_timer
     val mutable running_meanwhile : Lwt_process.process_none
     val running_when_done : string
     val start_time : T.t
@@ -61,7 +52,7 @@ class timer :
     method reset : 'a
     method is_finished : bool
     method name : string
-    method of_type : of_timer
+    method of_type : Log_f.sort_of_timer
     method remaining : Ts.t option
     method remaining_str : string
     method run_done : unit
@@ -72,7 +63,7 @@ val on_finish : timer -> unit
 
 (* A cycling set of timers, like pomodro, break, pomodoro, break, pomodoro, long
  * break *)
-class cycling : ?cycle:(of_timer list) -> log:(Log_f.read_log ref) ->
+class cycling : log:(Log_f.read_log ref) ->
   object ('a)
     (* Return current timer. Cycles through timers and call final_call, as one finishes *)
     method get : (timer -> unit) -> timer

@@ -1,14 +1,40 @@
 (
- (settings(
-  (pomodoro_duration 0.2)
-  (short_break_duration 0.1)
-  (long_break_duration 0.15)
-  (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
-  (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null")
- ))
- (tasks(
-  ;; (((name "Task name") (description "Task description")
-  ;;   (done_at ("2016-09-10T15:42:38")) (done_with (5)))
+ (settings
+  (
+   (timer_cycle
+    (
+     ((sort Pomodoro) (duration 0.15)
+      (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+     ((sort Short_break) (duration 0.1)
+      (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+     ((sort Pomodoro) (duration 25)
+      (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+     ((sort Short_break) (duration 5)
+      (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+     ((sort Pomodoro) (duration 25)
+      (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+     ((sort Short_break) (duration 5)
+      (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+     ((sort Pomodoro) (duration 25)
+      (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+     ((sort Long_break) (duration 30)
+      (ticking_command "ogg123 ~/clock_ticking.ogv &>/dev/null")
+      (ringing_command "ogg123 ~/bell_sound.ogv &>/dev/null"))
+     )
+    )
+   )
+  )
+ (tasks
+  (
+   ;; (((name "Task name") (description "Task description")
+   ;;   (done_at ("2016-09-10T15:42:38")) (done_with (5)))
    ((name "Task 1") (description "Learn it!") (done_at "2017-09-10T16:06:41") (done_with 5) (day "5/2/17"))
    ((name "Task 2") (description "Some fields are optional") (done_with 3) (day "2/15/32"))
    ((name "Task 3") (description "three") (short_interruption 42) (day "2017-02-05"))
@@ -74,6 +100,6 @@
    ((name "Task 63") (description "three"))
    ((name "Task 64") (description "four"))
    ((name "Task 65") (description "Last"))
- ))
-)
+   ))
+ )
 

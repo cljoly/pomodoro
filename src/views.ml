@@ -131,13 +131,10 @@ let add_pomodoro_timer ~log (box:box) =
     Tasks.get_pending !log.Log_f.ptasks
     |> Option.value_map ~f ~default
   in
-  let timer_cycle : Timer.cycling =
-    new Timer.cycling ~log
-      ?cycle:None
-  in
+  let timer_cycle : Timer.cycling = new Timer.cycling ~log in
   let mark_pomodoro_done = (fun timer ->
       match timer#of_type with
-      | Timer.Pomodoro -> current_task ~default:()
+      | Log_f.Pomodoro -> current_task ~default:()
                             (fun task -> task#record_pomodoro)
       | _ -> ()
     )

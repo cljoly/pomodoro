@@ -38,13 +38,42 @@ open Core.Std;;
 (* Tools with log file *)
 
 (* Simple log of pomodoros & tasks, with settings *)
+type sort_of_timer =
+  | Pomodoro
+  | Short_break
+  | Long_break
+[@@deriving sexp];;
+let default_mrd = 0.4;;
+type timer_sexp = {
+  sort : sort_of_timer;
+  duration : float;
+  ticking_command : string [@default ""] [@sexp_drop_default];
+  ringing_command : string [@default ""] [@sexp_drop_default];
+  max_ring_duration : float [@default default_mrd] [@sexp_drop_default];
+} [@@deriving sexp]
+
+(* Defaults from Pomodoro guide *)
+let default_cycle () =
+  let canonical_duration = function
+    | Pomodoro -> 25.
+    | Short_break -> 3. (* Between 3 and 5 minutes *)
+    | Long_break -> 15. (* Between 15 and 30 minutes *)
+  in
+  [ Pomodoro ; Short_break
+  ; Pomodoro ; Short_break
+  ; Pomodoro ; Short_break
+  ; Pomodoro ; Long_break ]
+  |> List.map ~f:(fun sort_of_timer ->
+      { sort = sort_of_timer
+      ; duration = canonical_duration sort_of_timer
+      ; ticking_command = ""
+      ; ringing_command = ""
+      ; max_ring_duration = default_mrd }
+    )
+;;
+
 type settings_sexp = {
-  pomodoro_duration : float;
-  short_break_duration : float;
-  long_break_duration : float;
-  ticking_command : string;
-  ringing_command : string;
-  max_ring_duration : float sexp_option;
+  timer_cycle : timer_sexp list [@default default_cycle ()]
 } [@@deriving sexp]
 type task_sexp = {
   name : string;
@@ -59,7 +88,7 @@ type task_sexp = {
 } [@@deriving sexp]
 type log = {
   settings : settings_sexp;
-  tasks : task_sexp list
+  tasks : task_sexp sexp_list;
 } [@@deriving sexp]
 
 (* fname stands for filename *)
