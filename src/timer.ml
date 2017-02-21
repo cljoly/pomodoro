@@ -42,7 +42,7 @@ module Ts = Time.Span;;
 
 
 (* When a timer is finished, notify *)
-let on_finish timer =
+let notify_end timer =
   sprintf "notify-send '%s ended.'" timer#name
   |> Sys.command
   |> ignore;
@@ -82,7 +82,7 @@ class timer
     method private call_on_finish_once =
       if not marked_finished
       then begin
-        on_finish s;
+        notify_end s;
         marked_finished <- true
       end
 

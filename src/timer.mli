@@ -59,7 +59,7 @@ class timer : Log_f.timer_sexp ->
     method ensure_consistency : unit
   end
 
-val on_finish : timer -> unit
+val notify_end : timer -> unit
 
 (* A cycling set of timers, like pomodro, break, pomodoro, break, pomodoro, long
  * break *)
