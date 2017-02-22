@@ -1,8 +1,10 @@
 # Light, simple, paper-like, Pomodoro timer
 
-***TODO** Add a set of badges here*
+[![](https://img.shields.io/badge/licence-CeCILL-blue.svg)](http://cecill.info/licences/Licence_CeCILL-B_V1-en.html)
 
-[Main view](TODO_add_screenshot.png)
+[![](https://img.shields.io/badge/opam-pomodoro-orange.svg)]()
+
+[![](./example_file.png)](https://pomodoro.ml)
 
 ## Yet an other pomodoro timer…
 
