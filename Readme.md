@@ -1,7 +1,6 @@
 # Light, simple, paper-like, Pomodoro timer
 
 [![](https://img.shields.io/badge/licence-CeCILL-blue.svg)](http://cecill.info/licences/Licence_CeCILL-B_V1-en.html)
-
 [![](https://img.shields.io/badge/opam-pomodoro-orange.svg)]()
 
 [![](./example_file.png)](https://pomodoro.ml)
