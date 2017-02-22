@@ -71,3 +71,6 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-B license and that you accept its terms.
 ```
+
+> This application is not affiliated, associated or endorsed by the Pomodoro
+> Technique® or Francesco Cirillo.
