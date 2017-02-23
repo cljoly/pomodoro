@@ -68,6 +68,7 @@ class timer
   let run_meanwhile () =
     Lwt_process.shell ticking_command
     |> Lwt_process.open_process_none
+         ~stdout:`Dev_null ~stderr:`Dev_null
   in
   object(s)
     val name = name_of_type type_of_timer
@@ -136,6 +137,7 @@ class timer
     method run_done =
       Lwt_process.shell running_when_done
       |> Lwt_process.exec ~timeout:max_ring_duration
+        ~stdout:`Dev_null ~stdin:`Dev_null
       |> ignore
   end
 
