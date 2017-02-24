@@ -43,7 +43,7 @@ type sort_of_timer =
   | Short_break
   | Long_break
 [@@deriving sexp];;
-let default_mrd = 0.4;;
+let default_mrd = 10.;;
 type timer_sexp = {
   sort : sort_of_timer;
   duration : float;
