@@ -36,6 +36,9 @@ knowledge of the CeCILL-B license and that you accept its terms.
 open Core.Std;;
 
 let () =
+  (* TODO Allow to configure this *)
+  Unix.nice 19 |> ignore;
+
   (* Get timers with command line arguments, mutable to allow easier update *)
   let log = ref (
       Sys.argv |> function
