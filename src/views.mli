@@ -38,5 +38,5 @@ open Core.Std;;
 open LTerm_widget;;
 
 (* Main view *)
-val mainv : log:(Log_f.read_log ref)-> unit -> unit Lwt.t
+val mainv : log:Log_f.read_log -> unit -> unit Lwt.t
 

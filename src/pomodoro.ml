@@ -40,16 +40,12 @@ let () =
   Unix.nice 19 |> ignore;
 
   (* Get timers with command line arguments, mutable to allow easier update *)
-  let log = ref (
-      Sys.argv |> function
-      | [| _ ; name |] -> Log_f.read_log name
-      | _ -> failwith "Needs exactly one argument, filename of your log file."
-    ) in
-  (* Update log file *)
-  (Lwt_engine.on_timer Param.log_tick true
-     (fun _ ->
-        log := Log_f.reread_log !log))
-  |> ignore;
+  let log =
+    Sys.argv
+    |> (function
+        | [| _ ; name |] -> new Log_f.read_log name
+        | _ -> failwith "Needs exactly one argument, filename of your log file.")
+  in
 
-  Lwt_main.run (Views.mainv ~log ())
+  Lwt_main.run ( Views.mainv ~log () )
 ;;

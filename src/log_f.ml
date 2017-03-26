@@ -91,8 +91,12 @@ type log = {
   tasks : task_sexp sexp_list;
 } [@@deriving sexp]
 
-(* fname stands for filename *)
-type read_log = { fname : string ; settings : settings_sexp ; ptasks : Tasks.ptask list }
+(* Internal bundle of relevant content for a read log file *)
+type internal_read_log = {
+    fname : string; (* Stands for filename *)
+    settings : settings_sexp;
+    ptasks : Tasks.ptask list;
+}
 
 (* Read log containing tasks and settings, tries multiple times since user may
  * edit file and lead to temporal removal *)
@@ -147,5 +151,38 @@ let reread_log r_log =
   in
   (* Erase old settings *)
   { fname ; ptasks ; settings = new_log.settings }
+;;
+
+module Li = Lwt_inotify;;
+class read_log filename =
+  let ( >>= ) = Lwt.( >>= ) in
+  let inotify =
+    Li.create () >>= fun inotify ->
+    Li.add_watch inotify filename Inotify.[ S_All ]
+    >>= fun _ -> Lwt.return inotify
+  in
+  let new_looker () =
+    inotify >>= (fun inotify -> Li.read inotify)
+  in
+  object(s)
+    (* Should not be used directly, only through irl method below *)
+    val mutable internal_read_log : internal_read_log = read_log filename
+    val mutable lookup = new_looker ()
+
+    method private irl =
+      Lwt.state lookup
+      |> (function
+          | Lwt.Return _ -> (* failwith "Reread not implemented" *)
+            lookup <- new_looker ();
+            internal_read_log <- reread_log internal_read_log;
+          | Lwt.Fail exn -> raise exn
+          | Lwt.Sleep -> () (* Nothing appened, give result in cache *)
+        );
+      internal_read_log
+
+    method fname = s#irl.fname;
+    method settings = s#irl.settings;
+    method ptasks = s#irl.ptasks;
+  end
 ;;
 

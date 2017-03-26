@@ -63,7 +63,7 @@ val notify_end : timer -> unit
 
 (* A cycling set of timers, like pomodro, break, pomodoro, break, pomodoro, long
  * break *)
-class cycling : log:(Log_f.read_log ref) ->
+class cycling : log:Log_f.read_log ->
   object ('a)
     (* Return current timer. Cycles through timers and call final_call, as one finishes *)
     method get : (timer -> unit) -> timer

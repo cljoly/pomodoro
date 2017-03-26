@@ -17,6 +17,7 @@ depends: [
   "ocamlbuild" { build }
   "lambda-term" { build & > "1.10.1" }
   "lwt" { build }
+  "inotify" { build }
   "base-threads" { build }
   "core" { build }
   "textutils" { build }

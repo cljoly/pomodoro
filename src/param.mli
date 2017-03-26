@@ -38,5 +38,4 @@ Inspired by example of lambda-term library, (c) 2011, Jeremie Dimino <jeremie@di
 open Core.Std;;
 
 val tick : float
-val log_tick : float
 

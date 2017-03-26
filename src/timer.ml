@@ -148,8 +148,8 @@ let empty_timer () =
     ; ringing_command = "" ; max_ring_duration = 0. }
 ;;
 
-class cycling ~log =
-  let cycle = !log.Log_f.settings.timer_cycle in
+class cycling ~(log:Log_f.read_log) =
+  let cycle = log#settings.timer_cycle in
   (* lead to problem if cycle is empty, for instance with `position` instance variable *)
   let _ = assert (cycle <> []) in
   let cycle_length = List.length cycle in

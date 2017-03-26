@@ -37,5 +37,4 @@ open Core.Std;;
 
 (* Interval used by lwt_engine timer *)
 let tick = 0.6;;
-let log_tick = 6. *. tick;;
 

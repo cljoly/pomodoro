@@ -45,7 +45,7 @@ open LTerm_geom;;
 
 (* Scrollable list of tasks *)
 class scrollable_task_list ~log (scroll : scrollable) display_task =
-  let ptasks () = !log.Log_f.ptasks in
+  let ptasks () = log#ptasks in
   object
     inherit t "task_list"
 
@@ -128,7 +128,7 @@ let add_scroll_task_list ~log (box : box) display_task =
 (* Place the pomodoro timer *)
 let add_pomodoro_timer ~log (box:box) =
   let current_task ~default f =
-    Tasks.get_pending !log.Log_f.ptasks
+    Tasks.get_pending log#ptasks
     |> Option.value_map ~f ~default
   in
   let timer_cycle : Timer.cycling = new Timer.cycling ~log in
@@ -248,7 +248,7 @@ let add_bottom_btn
            Option.some_if (not (Date.equal current_day date)) date)
     in
     let before_current_day, after_current_day =
-      List.filter_map !log.Log_f.ptasks ~f:get_date_and_not_current
+      List.filter_map log#ptasks ~f:get_date_and_not_current
       |> List.dedup ~compare:Date.compare
       |> List.partition_tf ~f:Date.(fun date -> date < current_day )
     in
