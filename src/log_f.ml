@@ -115,15 +115,25 @@ type internal_read_log = {
 (* Read log containing tasks and settings, tries multiple times since user may
  * edit file and lead to temporal removal *)
 let read_log filename =
-  let rec read_log tries =
-    try Sexp.load_sexp_conv_exn filename log_of_sexp
-    with exn ->
-      Unix.sleep (Int.of_float Defaults.tick);
-      if tries > 0
-      then read_log (pred tries)
-      else raise exn
+  let something_went_wrong exn =
+    (* A default pseudo log file to show details when we have trubble reading
+     * the user supplied log file *)
+    {
+      settings = { tick = Defaults.tick ; timer_cycle = default_cycle () };
+      tasks =
+        [{
+          name = "Something went wrong";
+          description = Exn.to_string exn;
+          done_at = None; done_with = None; estimation = None;
+          short_interruption = None; long_interruption = None;
+          day = None
+        }]
+    }
   in
-  let log = read_log 30 in
+  let log =
+    try Sexp.load_sexp_conv_exn filename log_of_sexp
+    with exn -> something_went_wrong exn
+  in
   {
     fname = filename;
     settings = log.settings;
