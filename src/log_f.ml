@@ -37,19 +37,32 @@ open Core.Std;;
 
 (* Tools with log file *)
 
+(* A set of arbitrary defaults *)
+module Defaults = struct
+
+  let ticking_command = ""
+  let ringing_command = ""
+  let max_ring_duration = 10.
+
+  let tick = 0.6;;
+
+end;;
+
 (* Simple log of pomodoros & tasks, with settings *)
 type sort_of_timer =
   | Pomodoro
   | Short_break
   | Long_break
 [@@deriving sexp];;
-let default_mrd = 10.;;
 type timer_sexp = {
   sort : sort_of_timer;
   duration : float;
-  ticking_command : string [@default ""] [@sexp_drop_default];
-  ringing_command : string [@default ""] [@sexp_drop_default];
-  max_ring_duration : float [@default default_mrd] [@sexp_drop_default];
+  ticking_command : string
+      [@default Defaults.ticking_command] [@sexp_drop_default];
+  ringing_command : string
+      [@default Defaults.ringing_command] [@sexp_drop_default];
+  max_ring_duration : float
+      [@default Defaults.max_ring_duration] [@sexp_drop_default];
 } [@@deriving sexp]
 
 (* Defaults from Pomodoro guide *)
@@ -68,11 +81,12 @@ let default_cycle () =
       ; duration = canonical_duration sort_of_timer
       ; ticking_command = ""
       ; ringing_command = ""
-      ; max_ring_duration = default_mrd }
+      ; max_ring_duration = Defaults.max_ring_duration }
     )
 ;;
 
 type settings_sexp = {
+  tick : float [@default Defaults.tick] [@sexp_drop_default];
   timer_cycle : timer_sexp list [@default default_cycle ()]
 } [@@deriving sexp]
 type task_sexp = {
@@ -104,7 +118,7 @@ let read_log filename =
   let rec read_log tries =
     try Sexp.load_sexp_conv_exn filename log_of_sexp
     with exn ->
-      Unix.sleep (Int.of_float Param.tick);
+      Unix.sleep (Int.of_float Defaults.tick);
       if tries > 0
       then read_log (pred tries)
       else raise exn

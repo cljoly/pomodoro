@@ -52,6 +52,7 @@ type timer_sexp = {
   max_ring_duration : float;
 }
 type settings_sexp = {
+  tick : float;
   timer_cycle : timer_sexp sexp_list
 }
 

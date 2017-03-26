@@ -159,7 +159,7 @@ let add_pomodoro_timer ~log (box:box) =
   let done_btn = new button "Done" in
 
   (* Update displayed time on every tick *)
-  (Lwt_engine.on_timer Param.tick true
+  (Lwt_engine.on_timer log#settings.tick true
      (fun _ ->
         clock#set_text (remaining_time ());
         ptask#set_text (task_summary ());
