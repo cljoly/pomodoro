@@ -91,7 +91,7 @@ type settings_sexp = {
 } [@@deriving sexp]
 type task_sexp = {
   name : string;
-  description : string;
+  description : string sexp_option;
   done_at : string sexp_option; (* date and time iso8601 like 2016-09-10T14:57:25 *)
   done_with : int sexp_option; (* Number of pomodoro used *)
   (* Write down an estimation of the number of needed pomodoro *)
@@ -123,7 +123,7 @@ let read_log filename =
       tasks =
         [{
           name = "Something went wrong";
-          description = Exn.to_string exn;
+          description = Exn.to_string exn |> Option.some;
           done_at = None; done_with = None; estimation = None;
           short_interruption = None; long_interruption = None;
           day = None
@@ -142,7 +142,7 @@ let read_log filename =
             new Tasks.ptask
               ~num:task_position
               ~name:task_sexp.name
-              ~description:task_sexp.description
+              ?description:task_sexp.description
               ?done_at:task_sexp.done_at
               ?number_of_pomodoro:task_sexp.done_with
               ?estimation:task_sexp.estimation

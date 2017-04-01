@@ -73,7 +73,7 @@ Contains a model for your task and a mini-tutorial to get started.
 
    ((name "Here is some example") (description "you are ready to add your own task.") (day 1/1/3000))
    ((name "Just before you go") (description "did you notice the order of your tasks is preserved too?"))
-   ((name "Name and description") (description "only requiered fields") (day 1/3/3000))
+   ((name "Name is the only requiered fields") (day 1/3/3000))
    ((name Tip) (description "Your editor should read this file as a scheme one") (day 1/3/3000))
    ((name "A finished task") (description "has both done_at and done_with fields.") (done_at "2016-09-10T16:06:41") (done_with 5) (day 1/3/3000))
    ((name OCaml) (description "Learn it!") (done_at "2016-09-10T16:06:41") (done_with 5) (day 1/3/3000))

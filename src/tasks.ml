@@ -52,12 +52,12 @@ class ptask
     ?short_interruption
     ?long_interruption
     ?day
+    ?description
     ~name
-    ~description
   =
   object(s:'s)
     val name : string Avl.t = new Avl.t name
-    val description : string Avl.t = new Avl.t description
+    val description : string option Avl.t = new Avl.t description
     method name = name
     method description = description
     (* Way to identify a task uniquely, XXX based on its name for now *)
@@ -116,7 +116,10 @@ class ptask
     method private summary ~long =
       let short_summary = sprintf "%s: %s"
           (name#print_both String.of_string)
-          (description#print_both String.of_string)
+          (description#print_both (Option.value_map
+                                     ~f:String.of_string
+                                     ~default:""
+                                  ))
       in
       let done_at =
         done_at#print_both (Option.value_map~default:"(no done date)"
