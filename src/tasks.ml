@@ -114,12 +114,13 @@ class ptask
 
     (* Returns a summary of the task, short or with more details *)
     method private summary ~long =
-      let short_summary = sprintf "%s: %s"
-          (name#print_both String.of_string)
-          (description#print_both (Option.value_map
-                                     ~f:String.of_string
-                                     ~default:""
-                                  ))
+      let short_summary =
+        [
+          name#print_both String.of_string;
+          description#print_both
+             (Option.value_map ~f:(sprintf ": %s") ~default:"")
+        ]
+        |> String.concat ~sep:""
       in
       let done_at =
         done_at#print_both (Option.value_map~default:"(no done date)"
