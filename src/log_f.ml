@@ -185,22 +185,22 @@ class read_log filename =
     Li.add_watch inotify filename Inotify.[ S_All ]
     >>= fun _ -> Lwt.return inotify
   in
-  let new_looker () =
+  let new_reader () =
     inotify >>= (fun inotify -> Li.read inotify)
   in
   object(s)
     (* Should not be used directly, only through irl method below *)
     val mutable internal_read_log : internal_read_log = read_log filename
-    val mutable lookup = new_looker ()
+    val mutable reader = new_reader ()
 
     method private irl =
-      Lwt.state lookup
+      Lwt.state reader
       |> (function
-          | Lwt.Return _ -> (* failwith "Reread not implemented" *)
-            lookup <- new_looker ();
+          | Lwt.Return _ ->
+            reader <- new_reader ();
             internal_read_log <- reread_log internal_read_log;
           | Lwt.Fail exn -> raise exn
-          | Lwt.Sleep -> () (* Nothing appened, give result in cache *)
+          | Lwt.Sleep -> () (* Give result in cache *)
         );
       internal_read_log
 
