@@ -124,7 +124,7 @@ class ptask
       in
       let done_at =
         done_at#print_both (Option.value_map~default:"(no done date)"
-                              ~f: (fun date -> sprintf "(done at %s)" date))
+                              ~f:(fun date -> sprintf "(done at %s)" date))
       in
       let nb =
         sprintf "with %s pomodoro" (number_of_pomodoro#print_both
