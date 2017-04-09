@@ -116,18 +116,27 @@ type internal_read_log = {
  * edit file and lead to temporal removal *)
 let read_log filename =
   let something_went_wrong exn =
+    let display_exn =
+      "Something went wrong" ::
+         (Exn.to_string exn
+          |> String.split_lines)
+    in
+    let map_string_list_to_task =
+      List.map ~f:(fun name ->
+            {
+              name;
+              description = Exn.to_string exn |> Option.some;
+              done_at = None; done_with = None; estimation = None;
+              short_interruption = None; long_interruption = None;
+              day = None
+            }
+        )
+    in
     (* A default pseudo log file to show details when we have trubble reading
      * the user supplied log file *)
     {
       settings = { tick = Defaults.tick ; timer_cycle = default_cycle () };
-      tasks =
-        [{
-          name = "Something went wrong";
-          description = Exn.to_string exn |> Option.some;
-          done_at = None; done_with = None; estimation = None;
-          short_interruption = None; long_interruption = None;
-          day = None
-        }]
+      tasks = display_exn |> map_string_list_to_task
     }
   in
   let log =
