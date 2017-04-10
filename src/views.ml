@@ -108,9 +108,8 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
                   else not_empty tl
                 | [] -> false (* Nothing not empty was found *)
               in
-              if not_empty task_list
-              then Some (creation_fun content_generator)
-              else None
+              Option.some_if (not_empty task_list)
+                (creation_fun content_generator)
             )
         in
         try
