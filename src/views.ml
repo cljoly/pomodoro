@@ -57,7 +57,7 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
       let { rows ; cols } = LTerm_draw.size ctx in
       (* Return elements of list [l] between [top] (of the screen) and (top+row)
        * (corresponding to the last line of the screen) *)
-      let select_task top l =
+      let select_task top free_space_to_keep l =
         let ll = List.length l in
         (* Reset offset to last line and redraw *)
         let reset_offset_redraw () =
@@ -65,7 +65,7 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
           List.last l |> Option.to_list
         in
         let top = Int.max 0 top in
-        let bottom = Int.min (top + rows) ll in
+        let bottom = Int.min (top + rows - free_space_to_keep) ll in
         match List.slice l top bottom with
         (* Appends when we are at the end of the list l *)
         | exception (Invalid_argument _) -> reset_offset_redraw ()
@@ -122,9 +122,11 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
           sprintf "Window is likely to be too small.\n%s" (Exn.to_string exn)
       in
       let offset = scroll#offset in
+      (* Total size (in line) the table adds around data *)
+      let tab_burden = 4 in
       ptasks ()
       |> List.filter ~f:display_task
-      |> select_task offset
+      |> select_task offset tab_burden
       |> draw_table_of_task
       |> LTerm_draw.draw_string ctx 0 0
   end;;
@@ -341,9 +343,7 @@ let mainv ~log () =
   in
 
   add_pomodoro_timer ~log main;
-  main#add ~expand:false (new hline);
   let ( _, _, adj) = add_scroll_task_list ~log main display_task in
-  main#add ~expand:false (new hline);
   add_bottom_btn ~main ~adj ~wakener ~log display_done_task current_day no_day_filter;
 
   Lazy.force LTerm.stdout >>= fun term ->
