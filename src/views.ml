@@ -79,28 +79,43 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
         let open Textutils.Ascii_table in
         (* String of option *)
         let soo f = Option.value_map ~default:"" ~f in
+        let non_empty_columns =
+          Column.[
+            (create "Summary" ~align:Align.Right,
+              (fun t -> t#short_summary))
+          ; (create "Done" ~align:Align.Center,
+              (fun t ->
+                 t#status#print_both
+                   (function Tasks.Done -> "X" | Tasks.Active -> " ")))
+          ; (create "with" ~align:Align.Center,
+              (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string)))
+          ; (create "at" ~align:Align.Center,
+              (fun t -> t#done_at#print_both (soo String.to_string)))
+          ; (create "Short interruption" ~align:Align.Center,
+              (fun t -> t#short_interruption#print_both (soo Int.to_string)))
+          ; (create "Long interruption" ~align:Align.Center,
+              (fun t -> t#long_interruption#print_both (soo Int.to_string)))
+          ; (create "Estimation" ~align:Align.Center,
+              (fun t -> t#estimation#print_both (soo Int.to_string)))
+          ; (create "Day" ~align:Align.Center,
+              (fun t -> t#day#print_both (soo Date.to_string)))
+          ]
+          |> List.filter_map ~f:(fun (creation_fun, content_generator) ->
+              let rec not_empty = function
+                | task :: tl ->
+                  if content_generator task <> ""
+                  then true
+                  else not_empty tl
+                | [] -> false (* Nothing not empty was found *)
+              in
+              if not_empty task_list
+              then Some (creation_fun content_generator)
+              else None
+            )
+        in
         try
           to_string ~bars:`Unicode ~display:Display.line ~limit_width_to:cols
-            Column.[
-              create "Summary" ~align:Align.Right
-                (fun t -> t#short_summary)
-            ; create "Done" ~align:Align.Center
-                (fun t ->
-                   t#status#print_both
-                     (function Tasks.Done -> "X" | Tasks.Active -> " "))
-            ; create "with" ~align:Align.Center
-                (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string))
-            ; create "at" ~align:Align.Center
-                (fun t -> t#done_at#print_both (soo String.to_string))
-            ; create "Short interruption" ~align:Align.Center
-                (fun t -> t#short_interruption#print_both (soo Int.to_string))
-            ; create "Long interruption" ~align:Align.Center
-                (fun t -> t#long_interruption#print_both (soo Int.to_string))
-            ; create "Estimation" ~align:Align.Center
-                (fun t -> t#estimation#print_both (soo Int.to_string))
-            ; create "Day" ~align:Align.Center
-                (fun t -> t#day#print_both (soo Date.to_string))
-            ]
+            non_empty_columns
             task_list
         with
           exn ->
@@ -265,7 +280,7 @@ let add_bottom_btn
   last_log_day_btn#on_click
     (fun () ->
        set_date_in_log (fun (before_current_day, _) ->
-         Lazy.force before_current_day |> List.last)
+           Lazy.force before_current_day |> List.last)
     );
   (* Next day present in a task of the log file *)
   let next_log_day_btn = new button "Next log day" in
