@@ -15,7 +15,7 @@ install: [make "install"]
 remove: ["ocamlfind" "remove" "oclaunch"]
 depends: [
   "ocamlbuild" { build }
-  "lambda-term" { build & > "1.10.1" }
+  "lambda-term" { build & >= "1.11" }
   "lwt" { build }
   "inotify" { build }
   "base-threads" { build }
