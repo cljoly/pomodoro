@@ -1,9 +1,9 @@
 # Light, simple, paper-like, Pomodoro timer
 
-[![](https://img.shields.io/badge/licence-CeCILL-blue.svg)](http://cecill.info/licences/Licence_CeCILL-B_V1-en.html)
-[![](https://img.shields.io/badge/opam-pomodoro-orange.svg)]()
+[![](https://img.shields.io/badge/licence-CeCILL--B-blue.svg)](http://cecill.info/licences/Licence_CeCILL-B_V1-en.html)
+[![](https://img.shields.io/badge/opam-pomodoro-orange.svg)](http://opam.ocaml.org/packages/pomodoro/)
 
-[![](./example_file.png)](https://pomodoro.ml)
+[![Version 0.2](http://download.tuxfamily.org/pomodoro/img/v02.png)](https://pomodoro.ml)
 
 ## Yet an other pomodoro timer…
 
@@ -34,7 +34,11 @@ Just run
 opam install pomodoro
 ```
 
-If you want to use the latest version, use the git repository.
+If you want to use the latest version, pin the git repository.
+
+```
+opam pin add pomodoro git://git.tuxfamily.org/gitroot/pomodoro/paper_pomodoro.git
+```
 
 ## [Licence](licence.en.html)
 
