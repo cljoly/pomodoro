@@ -37,19 +37,32 @@ open Core.Std;;
 
 (* Tools with log file *)
 
+(* A set of arbitrary defaults *)
+module Defaults = struct
+
+  let ticking_command = ""
+  let ringing_command = ""
+  let max_ring_duration = 10.
+
+  let tick = 0.6;;
+
+end;;
+
 (* Simple log of pomodoros & tasks, with settings *)
 type sort_of_timer =
   | Pomodoro
   | Short_break
   | Long_break
 [@@deriving sexp];;
-let default_mrd = 0.4;;
 type timer_sexp = {
   sort : sort_of_timer;
   duration : float;
-  ticking_command : string [@default ""] [@sexp_drop_default];
-  ringing_command : string [@default ""] [@sexp_drop_default];
-  max_ring_duration : float [@default default_mrd] [@sexp_drop_default];
+  ticking_command : string
+      [@default Defaults.ticking_command] [@sexp_drop_default];
+  ringing_command : string
+      [@default Defaults.ringing_command] [@sexp_drop_default];
+  max_ring_duration : float
+      [@default Defaults.max_ring_duration] [@sexp_drop_default];
 } [@@deriving sexp]
 
 (* Defaults from Pomodoro guide *)
@@ -68,16 +81,17 @@ let default_cycle () =
       ; duration = canonical_duration sort_of_timer
       ; ticking_command = ""
       ; ringing_command = ""
-      ; max_ring_duration = default_mrd }
+      ; max_ring_duration = Defaults.max_ring_duration }
     )
 ;;
 
 type settings_sexp = {
+  tick : float [@default Defaults.tick] [@sexp_drop_default];
   timer_cycle : timer_sexp list [@default default_cycle ()]
 } [@@deriving sexp]
 type task_sexp = {
   name : string;
-  description : string;
+  description : string sexp_option;
   done_at : string sexp_option; (* date and time iso8601 like 2016-09-10T14:57:25 *)
   done_with : int sexp_option; (* Number of pomodoro used *)
   (* Write down an estimation of the number of needed pomodoro *)
@@ -91,21 +105,44 @@ type log = {
   tasks : task_sexp sexp_list;
 } [@@deriving sexp]
 
-(* fname stands for filename *)
-type read_log = { fname : string ; settings : settings_sexp ; ptasks : Tasks.ptask list }
+(* Internal bundle of relevant content for a read log file *)
+type internal_read_log = {
+    fname : string; (* Stands for filename *)
+    settings : settings_sexp;
+    ptasks : Tasks.ptask list;
+}
 
 (* Read log containing tasks and settings, tries multiple times since user may
  * edit file and lead to temporal removal *)
 let read_log filename =
-  let rec read_log tries =
-    try Sexp.load_sexp_conv_exn filename log_of_sexp
-    with exn ->
-      Unix.sleep (Int.of_float Param.tick);
-      if tries > 0
-      then read_log (pred tries)
-      else raise exn
+  let something_went_wrong exn =
+    let display_exn =
+      "Something went wrong" ::
+         (Exn.to_string exn
+          |> String.split_lines)
+    in
+    let map_string_list_to_task =
+      List.map ~f:(fun name ->
+            {
+              name;
+              description = Exn.to_string exn |> Option.some;
+              done_at = None; done_with = None; estimation = None;
+              short_interruption = None; long_interruption = None;
+              day = None
+            }
+        )
+    in
+    (* A default pseudo log file to show details when we have trubble reading
+     * the user supplied log file *)
+    {
+      settings = { tick = Defaults.tick ; timer_cycle = default_cycle () };
+      tasks = display_exn |> map_string_list_to_task
+    }
   in
-  let log = read_log 30 in
+  let log =
+    try Sexp.load_sexp_conv_exn filename log_of_sexp
+    with exn -> something_went_wrong exn
+  in
   {
     fname = filename;
     settings = log.settings;
@@ -114,7 +151,7 @@ let read_log filename =
             new Tasks.ptask
               ~num:task_position
               ~name:task_sexp.name
-              ~description:task_sexp.description
+              ?description:task_sexp.description
               ?done_at:task_sexp.done_at
               ?number_of_pomodoro:task_sexp.done_with
               ?estimation:task_sexp.estimation
@@ -147,5 +184,38 @@ let reread_log r_log =
   in
   (* Erase old settings *)
   { fname ; ptasks ; settings = new_log.settings }
+;;
+
+module Li = Lwt_inotify;;
+class read_log filename =
+  let ( >>= ) = Lwt.( >>= ) in
+  let inotify =
+    Li.create () >>= fun inotify ->
+    Li.add_watch inotify filename Inotify.[ S_All ]
+    >>= fun _ -> Lwt.return inotify
+  in
+  let new_reader () =
+    inotify >>= (fun inotify -> Li.read inotify)
+  in
+  object(s)
+    (* Should not be used directly, only through irl method below *)
+    val mutable internal_read_log : internal_read_log = read_log filename
+    val mutable reader = new_reader ()
+
+    method private irl =
+      Lwt.state reader
+      |> (function
+          | Lwt.Return _ ->
+            reader <- new_reader ();
+            internal_read_log <- reread_log internal_read_log;
+          | Lwt.Fail exn -> raise exn
+          | Lwt.Sleep -> () (* Give result in cache *)
+        );
+      internal_read_log
+
+    method fname = s#irl.fname;
+    method settings = s#irl.settings;
+    method ptasks = s#irl.ptasks;
+  end
 ;;
 

@@ -45,7 +45,7 @@ open LTerm_geom;;
 
 (* Scrollable list of tasks *)
 class scrollable_task_list ~log (scroll : scrollable) display_task =
-  let ptasks () = !log.Log_f.ptasks in
+  let ptasks () = log#ptasks in
   object
     inherit t "task_list"
 
@@ -57,7 +57,7 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
       let { rows ; cols } = LTerm_draw.size ctx in
       (* Return elements of list [l] between [top] (of the screen) and (top+row)
        * (corresponding to the last line of the screen) *)
-      let select_task top l =
+      let select_task top free_space_to_keep l =
         let ll = List.length l in
         (* Reset offset to last line and redraw *)
         let reset_offset_redraw () =
@@ -65,7 +65,7 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
           List.last l |> Option.to_list
         in
         let top = Int.max 0 top in
-        let bottom = Int.min (top + rows) ll in
+        let bottom = Int.min (top + rows - free_space_to_keep) ll in
         match List.slice l top bottom with
         (* Appends when we are at the end of the list l *)
         | exception (Invalid_argument _) -> reset_offset_redraw ()
@@ -79,37 +79,53 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
         let open Textutils.Ascii_table in
         (* String of option *)
         let soo f = Option.value_map ~default:"" ~f in
+        let non_empty_columns =
+          Column.[
+            (create "Summary" ~align:Align.Right,
+              (fun t -> t#short_summary))
+          ; (create "Done" ~align:Align.Center,
+              (fun t ->
+                 t#status#print_both
+                   (function Tasks.Done -> "X" | Tasks.Active -> " ")))
+          ; (create "with" ~align:Align.Center,
+              (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string)))
+          ; (create "at" ~align:Align.Center,
+              (fun t -> t#done_at#print_both (soo String.to_string)))
+          ; (create "Short interruption" ~align:Align.Center,
+              (fun t -> t#short_interruption#print_both (soo Int.to_string)))
+          ; (create "Long interruption" ~align:Align.Center,
+              (fun t -> t#long_interruption#print_both (soo Int.to_string)))
+          ; (create "Estimation" ~align:Align.Center,
+              (fun t -> t#estimation#print_both (soo Int.to_string)))
+          ; (create "Day" ~align:Align.Center,
+              (fun t -> t#day#print_both (soo Date.to_string)))
+          ]
+          |> List.filter_map ~f:(fun (creation_fun, content_generator) ->
+              let rec not_empty = function
+                | task :: tl ->
+                  if content_generator task <> ""
+                  then true
+                  else not_empty tl
+                | [] -> false (* Nothing not empty was found *)
+              in
+              Option.some_if (not_empty task_list)
+                (creation_fun content_generator)
+            )
+        in
         try
           to_string ~bars:`Unicode ~display:Display.line ~limit_width_to:cols
-            Column.[
-              create "Summary" ~align:Align.Right
-                (fun t -> t#short_summary)
-            ; create "Done" ~align:Align.Center
-                (fun t ->
-                   t#status#print_both
-                     (function Tasks.Done -> "X" | Tasks.Active -> " "))
-            ; create "with" ~align:Align.Center
-                (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string))
-            ; create "at" ~align:Align.Center
-                (fun t -> t#done_at#print_both (soo String.to_string))
-            ; create "Short interruption" ~align:Align.Center
-                (fun t -> t#short_interruption#print_both (soo Int.to_string))
-            ; create "Long interruption" ~align:Align.Center
-                (fun t -> t#long_interruption#print_both (soo Int.to_string))
-            ; create "Estimation" ~align:Align.Center
-                (fun t -> t#estimation#print_both (soo Int.to_string))
-            ; create "Day" ~align:Align.Center
-                (fun t -> t#day#print_both (soo Date.to_string))
-            ]
+            non_empty_columns
             task_list
         with
           exn ->
           sprintf "Window is likely to be too small.\n%s" (Exn.to_string exn)
       in
       let offset = scroll#offset in
+      (* Total size (in line) the table adds around data *)
+      let tab_burden = 4 in
       ptasks ()
       |> List.filter ~f:display_task
-      |> select_task offset
+      |> select_task offset tab_burden
       |> draw_table_of_task
       |> LTerm_draw.draw_string ctx 0 0
   end;;
@@ -128,7 +144,7 @@ let add_scroll_task_list ~log (box : box) display_task =
 (* Place the pomodoro timer *)
 let add_pomodoro_timer ~log (box:box) =
   let current_task ~default f =
-    Tasks.get_pending !log.Log_f.ptasks
+    Tasks.get_pending log#ptasks
     |> Option.value_map ~f ~default
   in
   let timer_cycle : Timer.cycling = new Timer.cycling ~log in
@@ -159,7 +175,7 @@ let add_pomodoro_timer ~log (box:box) =
   let done_btn = new button "Done" in
 
   (* Update displayed time on every tick *)
-  (Lwt_engine.on_timer Param.tick true
+  (Lwt_engine.on_timer log#settings.tick true
      (fun _ ->
         clock#set_text (remaining_time ());
         ptask#set_text (task_summary ());
@@ -248,7 +264,7 @@ let add_bottom_btn
            Option.some_if (not (Date.equal current_day date)) date)
     in
     let before_current_day, after_current_day =
-      List.filter_map !log.Log_f.ptasks ~f:get_date_and_not_current
+      List.filter_map log#ptasks ~f:get_date_and_not_current
       |> List.dedup ~compare:Date.compare
       |> List.partition_tf ~f:Date.(fun date -> date < current_day )
     in
@@ -265,7 +281,7 @@ let add_bottom_btn
   last_log_day_btn#on_click
     (fun () ->
        set_date_in_log (fun (before_current_day, _) ->
-         Lazy.force before_current_day |> List.last)
+           Lazy.force before_current_day |> List.last)
     );
   (* Next day present in a task of the log file *)
   let next_log_day_btn = new button "Next log day" in
@@ -326,9 +342,7 @@ let mainv ~log () =
   in
 
   add_pomodoro_timer ~log main;
-  main#add ~expand:false (new hline);
   let ( _, _, adj) = add_scroll_task_list ~log main display_task in
-  main#add ~expand:false (new hline);
   add_bottom_btn ~main ~adj ~wakener ~log display_done_task current_day no_day_filter;
 
   Lazy.force LTerm.stdout >>= fun term ->

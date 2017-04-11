@@ -68,6 +68,7 @@ class timer
   let run_meanwhile () =
     Lwt_process.shell ticking_command
     |> Lwt_process.open_process_none
+        ~stdout:`Dev_null ~stderr:`Dev_null ~stdin:`Dev_null
   in
   object(s)
     val name = name_of_type type_of_timer
@@ -136,6 +137,7 @@ class timer
     method run_done =
       Lwt_process.shell running_when_done
       |> Lwt_process.exec ~timeout:max_ring_duration
+        ~stdout:`Dev_null ~stderr:`Dev_null ~stdin:`Dev_null
       |> ignore
   end
 
@@ -146,8 +148,8 @@ let empty_timer () =
     ; ringing_command = "" ; max_ring_duration = 0. }
 ;;
 
-class cycling ~log =
-  let cycle = !log.Log_f.settings.timer_cycle in
+class cycling ~(log:Log_f.read_log) =
+  let cycle = log#settings.timer_cycle in
   (* lead to problem if cycle is empty, for instance with `position` instance variable *)
   let _ = assert (cycle <> []) in
   let cycle_length = List.length cycle in

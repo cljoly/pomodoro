@@ -52,12 +52,18 @@ type timer_sexp = {
   max_ring_duration : float;
 }
 type settings_sexp = {
+  tick : float;
   timer_cycle : timer_sexp sexp_list
 }
-type read_log = {
-    fname : string;
-    settings : settings_sexp;
-    ptasks : Tasks.ptask list;
-}
-val read_log : string -> read_log
-val reread_log : read_log -> read_log
+
+type internal_read_log
+
+(* Self refreshing log file *)
+class read_log : string -> object
+    val mutable internal_read_log : internal_read_log
+    method fname : string
+    method private irl : internal_read_log
+    method ptasks : Tasks.ptask list
+    method settings : settings_sexp
+  end
+;;

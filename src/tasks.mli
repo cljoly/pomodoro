@@ -45,10 +45,10 @@ class ptask :
   ?short_interruption:int ->
   ?long_interruption:int ->
   ?day:Date.t ->
+  ?description:string ->
   name:string ->
-  description:string ->
   object ('a)
-    method description : string Avl.t
+    method description : string option Avl.t
     method done_at : string option Avl.t
     method estimation : int option Avl.t
     method day : Date.t option Avl.t

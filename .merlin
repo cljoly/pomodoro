@@ -1,4 +1,4 @@
-PKG core core lwt lambda-term textutils
+PKG core core lwt lambda-term textutils inotify.lwt
 
 S src/*
 
