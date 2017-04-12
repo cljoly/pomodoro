@@ -44,7 +44,7 @@ module Defaults = struct
   let ringing_command = ""
   let max_ring_duration = 10.
 
-  let tick = 0.6;;
+  let tick = 0.1;;
 
 end;;
 
