@@ -82,31 +82,32 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
         let non_empty_columns =
           Column.[
             (create "Summary" ~align:Align.Right,
-              (fun t -> t#short_summary))
+             (fun t -> t#short_summary))
           ; (create "Done" ~align:Align.Center,
-              (fun t ->
-                 t#status#print_both
-                   (function Tasks.Done -> "X" | Tasks.Active -> " ")))
+             (fun t ->
+                t#status#print_both
+                  (function Tasks.Done -> "X" | Tasks.Active -> " ")))
           ; (create "with" ~align:Align.Center,
-              (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string)))
+             (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string)))
           ; (create "at" ~align:Align.Center,
-              (fun t -> t#done_at#print_both (soo String.to_string)))
+             (fun t -> t#done_at#print_both (soo String.to_string)))
           ; (create "Short interruption" ~align:Align.Center,
-              (fun t -> t#short_interruption#print_both (soo Int.to_string)))
+             (fun t -> t#short_interruption#print_both (soo Int.to_string)))
           ; (create "Long interruption" ~align:Align.Center,
-              (fun t -> t#long_interruption#print_both (soo Int.to_string)))
+             (fun t -> t#long_interruption#print_both (soo Int.to_string)))
           ; (create "Estimation" ~align:Align.Center,
-              (fun t -> t#estimation#print_both (soo Int.to_string)))
+             (fun t -> t#estimation#print_both (soo Int.to_string)))
           ; (create "Day" ~align:Align.Center,
-              (fun t -> t#day#print_both (soo Date.to_string)))
+             (fun t -> t#day#print_both (soo Date.to_string)))
           ]
-          |> List.filter_map ~f:(fun (creation_fun, content_generator) ->
-              let not_empty =
-                List.exists ~f:(fun task -> content_generator task <> "")
-              in
-              Option.some_if (not_empty task_list)
-                (creation_fun content_generator)
-            )
+          |> List.filter_map
+            ~f:(fun (creation_fun, content_generator) ->
+                let not_empty =
+                  List.exists ~f:(fun task -> content_generator task <> "")
+                in
+                Option.some_if (not_empty task_list)
+                  (creation_fun content_generator)
+              )
         in
         try
           to_string ~bars:`Unicode ~display:Display.line ~limit_width_to:cols
