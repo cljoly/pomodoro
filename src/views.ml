@@ -82,35 +82,32 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
         let non_empty_columns =
           Column.[
             (create "Summary" ~align:Align.Right,
-              (fun t -> t#short_summary))
+             (fun t -> t#short_summary))
           ; (create "Done" ~align:Align.Center,
-              (fun t ->
-                 t#status#print_both
-                   (function Tasks.Done -> "X" | Tasks.Active -> " ")))
+             (fun t ->
+                t#status#print_both
+                  (function Tasks.Done -> "X" | Tasks.Active -> " ")))
           ; (create "with" ~align:Align.Center,
-              (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string)))
+             (fun t -> t#number_of_pomodoro#print_both (soo Int.to_string)))
           ; (create "at" ~align:Align.Center,
-              (fun t -> t#done_at#print_both (soo String.to_string)))
+             (fun t -> t#done_at#print_both (soo String.to_string)))
           ; (create "Short interruption" ~align:Align.Center,
-              (fun t -> t#short_interruption#print_both (soo Int.to_string)))
+             (fun t -> t#short_interruption#print_both (soo Int.to_string)))
           ; (create "Long interruption" ~align:Align.Center,
-              (fun t -> t#long_interruption#print_both (soo Int.to_string)))
+             (fun t -> t#long_interruption#print_both (soo Int.to_string)))
           ; (create "Estimation" ~align:Align.Center,
-              (fun t -> t#estimation#print_both (soo Int.to_string)))
+             (fun t -> t#estimation#print_both (soo Int.to_string)))
           ; (create "Day" ~align:Align.Center,
-              (fun t -> t#day#print_both (soo Date.to_string)))
+             (fun t -> t#day#print_both (soo Date.to_string)))
           ]
-          |> List.filter_map ~f:(fun (creation_fun, content_generator) ->
-              let rec not_empty = function
-                | task :: tl ->
-                  if content_generator task <> ""
-                  then true
-                  else not_empty tl
-                | [] -> false (* Nothing not empty was found *)
-              in
-              Option.some_if (not_empty task_list)
-                (creation_fun content_generator)
-            )
+          |> List.filter_map
+            ~f:(fun (creation_fun, content_generator) ->
+                let not_empty =
+                  List.exists ~f:(fun task -> content_generator task <> "")
+                in
+                Option.some_if (not_empty task_list)
+                  (creation_fun content_generator)
+              )
         in
         try
           to_string ~bars:`Unicode ~display:Display.line ~limit_width_to:cols
@@ -255,7 +252,7 @@ let add_bottom_btn
   last_day_btn#on_click (fun () -> move_current_day (-1));
   let next_day_btn = new button "Next day" in
   next_day_btn#on_click (fun () -> move_current_day 1);
-  let ordered_day_in_log () =
+  let ordered_day_in_log =
     let current_day = current_day_or_today () in
     let get_date_and_not_current (ptask:Tasks.ptask) =
       let current_day = current_day_or_today () in
@@ -263,16 +260,19 @@ let add_bottom_btn
         (fun date ->
            Option.some_if (not (Date.equal current_day date)) date)
     in
-    let before_current_day, after_current_day =
-      List.filter_map log#ptasks ~f:get_date_and_not_current
+    let before_after_current_day =
+      lazy ( List.filter_map log#ptasks ~f:get_date_and_not_current
       |> List.dedup ~compare:Date.compare
-      |> List.partition_tf ~f:Date.(fun date -> date < current_day )
+      |> List.partition_tf ~f:Date.(fun date -> date < current_day) )
     in
     let lazy_sort l = lazy (List.sort ~cmp:Date.compare l) in
-    ( lazy_sort before_current_day, lazy_sort after_current_day )
+    Lazy.map before_after_current_day
+      ~f:(fun (before_current_day, after_current_day) ->
+          ( lazy_sort before_current_day, lazy_sort after_current_day )
+        )
   in
   let set_date_in_log f =
-    ordered_day_in_log ()
+    Lazy.force ordered_day_in_log
     |> f
     |> Option.iter ~f:(fun date -> set_day_to (Some date))
   in
