@@ -101,12 +101,8 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
               (fun t -> t#day#print_both (soo Date.to_string)))
           ]
           |> List.filter_map ~f:(fun (creation_fun, content_generator) ->
-              let rec not_empty = function
-                | task :: tl ->
-                  if content_generator task <> ""
-                  then true
-                  else not_empty tl
-                | [] -> false (* Nothing not empty was found *)
+              let not_empty =
+                List.exists ~f:(fun task -> content_generator task <> "")
               in
               Option.some_if (not_empty task_list)
                 (creation_fun content_generator)
