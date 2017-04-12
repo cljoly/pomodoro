@@ -191,7 +191,7 @@ class read_log filename =
   let ( >>= ) = Lwt.( >>= ) in
   let inotify =
     Li.create () >>= fun inotify ->
-    Li.add_watch inotify filename Inotify.[ S_All ]
+    Li.add_watch inotify filename Inotify.[ S_Modify ]
     >>= fun _ -> Lwt.return inotify
   in
   let new_reader () =
