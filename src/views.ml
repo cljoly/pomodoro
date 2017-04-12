@@ -252,7 +252,7 @@ let add_bottom_btn
   last_day_btn#on_click (fun () -> move_current_day (-1));
   let next_day_btn = new button "Next day" in
   next_day_btn#on_click (fun () -> move_current_day 1);
-  let ordered_day_in_log () =
+  let ordered_day_in_log =
     let current_day = current_day_or_today () in
     let get_date_and_not_current (ptask:Tasks.ptask) =
       let current_day = current_day_or_today () in
@@ -260,16 +260,19 @@ let add_bottom_btn
         (fun date ->
            Option.some_if (not (Date.equal current_day date)) date)
     in
-    let before_current_day, after_current_day =
-      List.filter_map log#ptasks ~f:get_date_and_not_current
+    let before_after_current_day =
+      lazy ( List.filter_map log#ptasks ~f:get_date_and_not_current
       |> List.dedup ~compare:Date.compare
-      |> List.partition_tf ~f:Date.(fun date -> date < current_day )
+      |> List.partition_tf ~f:Date.(fun date -> date < current_day) )
     in
     let lazy_sort l = lazy (List.sort ~cmp:Date.compare l) in
-    ( lazy_sort before_current_day, lazy_sort after_current_day )
+    Lazy.map before_after_current_day
+      ~f:(fun (before_current_day, after_current_day) ->
+          ( lazy_sort before_current_day, lazy_sort after_current_day )
+        )
   in
   let set_date_in_log f =
-    ordered_day_in_log ()
+    Lazy.force ordered_day_in_log
     |> f
     |> Option.iter ~f:(fun date -> set_day_to (Some date))
   in
