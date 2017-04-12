@@ -92,7 +92,8 @@ type settings_sexp = {
 type task_sexp = {
   name : string;
   description : string sexp_option;
-  done_at : string sexp_option; (* date and time iso8601 like 2016-09-10T14:57:25 *)
+  (* Date and time, can be iso8601 like 2016-09-10T14:57:25 *)
+  done_at : string sexp_option;
   done_with : int sexp_option; (* Number of pomodoro used *)
   (* Write down an estimation of the number of needed pomodoro *)
   estimation : int sexp_option;
