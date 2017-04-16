@@ -43,6 +43,44 @@ open LTerm_geom;;
 
 (* A view with both task and pomodoro timers *)
 
+(* Combinaison to filter as few element as possible in case of slicing. May use
+ * length of the list if given. A bit picky about choice of start and stop *)
+let filter_slice_exn l ?length ~f start stop =
+  let ll =
+    Option.value_map length
+      ~default:(lazy ( List.length l ))
+      ~f:(fun i -> Lazy.return i)
+  in
+  (* TODO Treat these cases by returning [] or a given element of l *)
+  assert ( 0 <= start );
+  assert ( stop <= (Lazy.force ll) );
+  assert ( start < stop );
+  (* i is the indice of the current element if the list l had been filtered.
+   * Caution, acc is in reverse order for performance reasons *)
+  let rec fs acc i l =
+    if i < stop
+    then
+      let keep_if_in_slice x =
+        if start <= i (* i < stop verified before *)
+        then x :: acc
+        else acc
+      in
+      begin (* Filter like operation *)
+        match l with
+        | hd :: tl ->
+          if f hd
+          then fs
+              (keep_if_in_slice hd)
+              (succ i) tl
+          else fs acc i tl
+        | [] -> acc
+      end
+    else acc
+  in
+  fs [] 0 l
+  |> List.rev
+;;
+
 (* Scrollable list of tasks *)
 class scrollable_task_list ~log (scroll : scrollable) display_task =
   let ptasks () = log#ptasks in
@@ -66,7 +104,7 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
         in
         let top = Int.max 0 top in
         let bottom = Int.min (top + rows - free_space_to_keep) ll in
-        match List.slice l top bottom with
+        match filter_slice_exn l ~length:ll ~f:display_task top bottom with
         (* Appends when we are at the end of the list l *)
         | exception (Invalid_argument _) -> reset_offset_redraw ()
         | [] ->  reset_offset_redraw ()
@@ -121,7 +159,7 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
       (* Total size (in line) the table adds around data *)
       let tab_burden = 4 in
       ptasks ()
-      |> List.filter ~f:display_task
+      (* |> List.filter ~f:display_task *)
       |> select_task offset tab_burden
       |> draw_table_of_task
       |> LTerm_draw.draw_string ctx 0 0
