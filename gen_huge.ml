@@ -1,51 +1,5 @@
-# Light, simple, paper-like, Pomodoro timer
-
-[![](https://img.shields.io/badge/licence-CeCILL--B-blue.svg)](http://cecill.info/licences/Licence_CeCILL-B_V1-en.html)
-[![](https://img.shields.io/badge/opam-pomodoro-orange.svg)](http://opam.ocaml.org/packages/pomodoro/)
-
-[![Version 0.2](https://download.tuxfamily.org/pomodoro/img/v02.png)](https://pomodoro.ml)
-
-## Yet an other pomodoro timer…
-
-…but this one different
-
-### Paper like
-
- + Thanks to a simple design, you won't spend more time to manage your task list
-   than you would need to actually do it!
- + Never change your log file (you edit it with your favorite text editor)
-
-### Robust
-
- + Written in OCaml, a type-safe language
- + Internally use timer that remain accurate even when the programme is frozen
-   for a while
-
-### Light and fast
-
- + Tested (with [this file](./huge_log.ml)) to handle smoothly tens of thousands
-   of task.
- + NCurse like interface
- + Careful design, to limit memory and CPU footprint
-
-## Install
-
-Just run
-
-```
-opam install pomodoro
-```
-
-If you want to use the latest version, pin the git repository.
-
-```
-opam pin add pomodoro git://git.tuxfamily.org/gitroot/pomodoro/paper_pomodoro.git
-```
-
-## [Licence](licence.en.html)
-
-```
-©  Clément Joly, 2016
+(*
+©  Clément Joly, 2017
 
 leo@wzukw.eu.org
 
@@ -76,7 +30,45 @@ same conditions as regards security.
 
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-B license and that you accept its terms.
-```
 
-> This application is not affiliated, associated or endorsed by the Pomodoro
-> Technique® or Francesco Cirillo.
+*)
+
+open Core.Std;;
+
+let gen_task i : Sexp.t =
+  let open Sexp.O in
+  let each n f = Option.some_if ( i mod n = 0 ) (f i) in
+  let pseudo_random_date i =
+    let open Date in
+    add_days (Date.today ~zone:Core.Zone.utc) i
+    |> to_string
+  in
+  let raw_list =
+    [ ( "name", Some (sprintf "Task %i" i) )
+    ; ( "description", (each 11 ( sprintf "desc %i" )) )
+    ; ( "done_at", (each 23 pseudo_random_date) )
+    ; ( "done_with", (each 7 Int.to_string) )
+    ; ( "estimation", (each 14 Int.to_string) )
+    ; ( "short_interruption", (each 2 Int.to_string) )
+    ; ( "long_interruption", (each 5 Int.to_string) )
+    ; ( "day", (each 3 pseudo_random_date) )
+    ]
+  in
+  (* eprintf "%i\n%!" i; *)
+  List (List.filter_map raw_list
+          ~f:(fun (field, val_option) -> Option.map val_option
+                 ~f:(fun atm -> List [ Atom field ; Atom atm])
+             ))
+;;
+
+let () =
+  let tasks =
+    Sexp.List (List.init 50_000 ~f:gen_task)
+  in
+  Sexp.O.(List [
+      List [ Atom "settings" ; List [] ]
+    ; List [ Atom "tasks" ; tasks ]
+    ])
+  |> Sexp.to_string_mach
+  |> print_endline
+;;
