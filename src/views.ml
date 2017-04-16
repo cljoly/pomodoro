@@ -55,8 +55,8 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
 
     method! draw ctx _ =
       let { rows ; cols } = LTerm_draw.size ctx in
-      (* Return elements of list [l] between [top] (of the screen) and (top+row)
-       * (corresponding to the last line of the screen) *)
+      (* Return elements of a task list [l] between [top] (of the screen) and
+         (top+row) (corresponding to the last line of the screen) *)
       let select_task top free_space_to_keep l =
         let ll = List.length l in
         (* Reset offset to last line and redraw *)
@@ -125,7 +125,8 @@ class scrollable_task_list ~log (scroll : scrollable) display_task =
       |> select_task offset tab_burden
       |> draw_table_of_task
       |> LTerm_draw.draw_string ctx 0 0
-  end;;
+  end
+;;
 
 (* Place scrollable task list *)
 let add_scroll_task_list ~log (box : box) display_task =
