@@ -23,7 +23,7 @@
 
 ### Light and fast
 
- + Tested (with [this file](./huge_log.ml)) to handle smoothly tens of thousands
+ + Tested (with [this file](./huge_log.scm)) to handle smoothly tens of thousands
    of task.
  + NCurse like interface
  + Careful design, to limit memory and CPU footprint
