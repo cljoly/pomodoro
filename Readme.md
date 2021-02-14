@@ -1,9 +1,13 @@
+<div align="center">
+
 # Light, simple, paper-like, Pomodoro timer
 
 [![](https://img.shields.io/badge/licence-CeCILL--B-blue.svg)](http://cecill.info/licences/Licence_CeCILL-B_V1-en.html)
 [![](https://img.shields.io/badge/opam-pomodoro-orange.svg)](http://opam.ocaml.org/packages/pomodoro/)
 
 [![Version 0.2](https://download.tuxfamily.org/pomodoro/img/v02.png)](https://pomodoro.ml)
+
+</div>
 
 ## Yet an other pomodoro timer…
 
