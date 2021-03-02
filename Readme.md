@@ -49,7 +49,7 @@ opam pin add pomodoro git://git.tuxfamily.org/gitroot/pomodoro/paper_pomodoro.gi
 ```
 ©  Clément Joly, 2016
 
-leo@wzukw.eu.org
+foss@131719.xyz
 
 This software is a computer program whose purpose is to use Pomodoro method.
 
