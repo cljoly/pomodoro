@@ -3,6 +3,7 @@
 title: "Light, simple, paper-like, Pomodoro timer"
 date: 2021-08-22T04:48:15
 ---
+{{< github_badge >}}
 end_insert -->
 
 > Archived: the code is not compiling anymore (years of breaking changes in various dependencies)     
