@@ -1,9 +1,18 @@
+<!-- insert
+---
+title: "Light, simple, paper-like, Pomodoro timer"
+date: 2021-08-22T04:48:15
+---
+end_insert -->
+
 > Archived: the code is not compiling anymore (years of breaking changes in various dependencies)     
 > You may be interested in https://github.com/open-pomodoro/openpomodoro-cli as an alternative.
 
-<div align="center">
+<div align="center" class="badges">
 
+<!-- remove -->
 # Light, simple, paper-like, Pomodoro timer
+<!-- end_remove -->
 
 [![](https://img.shields.io/badge/licence-CeCILL--B-blue.svg)](http://cecill.info/licences/Licence_CeCILL-B_V1-en.html)
 [![](https://img.shields.io/badge/opam-pomodoro-orange.svg)](http://opam.ocaml.org/packages/pomodoro/)
