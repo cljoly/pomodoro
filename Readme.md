@@ -1,3 +1,6 @@
+> Archived: the code is not compiling anymore (years of breaking changes in various dependencies)     
+> You may be interested in https://github.com/open-pomodoro/openpomodoro-cli as an alternative.
+
 <div align="center">
 
 # Light, simple, paper-like, Pomodoro timer
