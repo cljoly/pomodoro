@@ -57,7 +57,7 @@ If you want to use the latest version, pin the git repository.
 opam pin add pomodoro git://git.tuxfamily.org/gitroot/pomodoro/paper_pomodoro.git
 ```
 
-## [Licence](licence.en.html)
+## Licence
 
 ```
 ©  Clément Joly, 2016
